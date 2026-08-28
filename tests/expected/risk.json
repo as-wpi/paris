@@ -1,0 +1,1023 @@
+{
+ "cvar/default": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   -0.08583249699600001,
+   -0.09303964947699998,
+   -0.09485615385400001,
+   -0.09027414046200001,
+   -0.098728408219,
+   -0.101233100495
+  ]
+ },
+ "cvar/gaussian": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   -0.07597260264624316,
+   -0.08110324968631935,
+   -0.08364344460800816,
+   -0.07728564075335867,
+   -0.08669365834798053,
+   -0.08868007906408594
+  ]
+ },
+ "cvar/modified": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   -0.0852894291574618,
+   -0.0918406738067784,
+   -0.09366292001804427,
+   -0.09033954464471933,
+   -0.11324744684244245,
+   -0.10275598523880433
+  ]
+ },
+ "cvar/gaussian_tail": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   -0.07979781368461537,
+   -0.08483504333066667,
+   -0.08419254685750001,
+   -0.08240325488214284,
+   -0.09198969953307692,
+   -0.09558564692923076
+  ]
+ },
+ "cvar/c99": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   -0.10824314675,
+   -0.11610446715,
+   -0.11207068284999999,
+   -0.1150534151,
+   -0.1517531342,
+   -0.1377745575
+  ]
+ },
+ "cvar/lower": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   -0.08793786597555557,
+   -0.09500277165333332,
+   -0.0974713722288889,
+   -0.09232196081666667,
+   -0.10172686320777778,
+   -0.10289540268111112
+  ]
+ },
+ "cvar/modified_non_operational": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   -0.0852894291574618,
+   -0.0918406738067784,
+   -0.09366292001804427,
+   -0.09033954464471933,
+   -0.11324744684244245,
+   -0.10275598523880433
+  ]
+ },
+ "cvar/gaussian_ddof1": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   -0.07620529334825078,
+   -0.08134663499338735,
+   -0.08389101475282176,
+   -0.07751620191072123,
+   -0.08694899237995578,
+   -0.08894468955549227
+  ]
+ },
+ "downside_deviation/default": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   0.025593073427368513,
+   0.02756257445131376,
+   0.028915146600247525,
+   0.026894613079717997,
+   0.02987911785612508,
+   0.03043223191688464
+  ]
+ },
+ "downside_deviation/mar": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   0.02789662853919767,
+   0.029880325352225307,
+   0.03128366971331527,
+   0.029182533846804613,
+   0.032163074031430365,
+   0.032711528779810525
+  ]
+ },
+ "downside_deviation/subset": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   0.043651692707653636,
+   0.046314388882456696,
+   0.04823379880580024,
+   0.04658283630397805,
+   0.04879239514132539,
+   0.04969562662027186
+  ]
+ },
+ "downside_deviation/annualized": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   0.0886570069960864,
+   0.0954795586741506,
+   0.10016500603986239,
+   0.0931656726079561,
+   0.1035043004242942,
+   0.1054203437355268
+  ]
+ },
+ "downside_frequency/default": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   0.34375,
+   0.3541666666666667,
+   0.359375,
+   0.3333333333333333,
+   0.375,
+   0.375
+  ]
+ },
+ "downside_frequency/mar": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   0.3958333333333333,
+   0.375,
+   0.3802083333333333,
+   0.3802083333333333,
+   0.4114583333333333,
+   0.421875
+  ]
+ },
+ "gain_deviation/default": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   0.02673243878790447,
+   0.027927457738858432,
+   0.027020030829251824,
+   0.025770600021100345,
+   0.029373269410718522,
+   0.0301013178178538
+  ]
+ },
+ "loss_deviation/default": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   0.028516226328386417,
+   0.030536796010588157,
+   0.03098132532633451,
+   0.029939710806018354,
+   0.03403022828750879,
+   0.034745687375324505
+  ]
+ },
+ "kurtosis/default": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   0.3846930919601621,
+   0.5299862502572061,
+   0.2863200516342439,
+   0.6515068519036911,
+   2.1261061152756024,
+   0.6320341524142084
+  ]
+ },
+ "kurtosis/moment": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   3.384693091960162,
+   3.529986250257206,
+   3.286320051634244,
+   3.651506851903691,
+   5.1261061152756024,
+   3.6320341524142084
+  ]
+ },
+ "kurtosis/sample": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   3.474518001919451,
+   3.6236670326714395,
+   3.3735342819101404,
+   3.74841261714636,
+   5.262145634291411,
+   3.7284231400847943
+  ]
+ },
+ "kurtosis/sample_excess": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   0.4268154121115981,
+   0.5759644428635866,
+   0.32583169210228746,
+   0.700710027338507,
+   2.214443044483558,
+   0.6807205502769413
+  ]
+ },
+ "kurtosis/fisher": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   0.4268154121115981,
+   0.5759644428635866,
+   0.32583169210228746,
+   0.700710027338507,
+   2.214443044483558,
+   0.6807205502769413
+  ]
+ },
+ "mean_absolute_deviation/default": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   0.033535080608613634,
+   0.03426630789294884,
+   0.03534659196479362,
+   0.032295238781903206,
+   0.03550105419723826,
+   0.03741893756045683
+  ]
+ },
+ "outlier_loss_ratio/default": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   2.9355053736905745,
+   2.88326910908007,
+   2.834906399035554,
+   2.982294364161366,
+   2.734032131402111,
+   3.21706267027561
+  ]
+ },
+ "outlier_loss_ratio/q05": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   1.8970063438539047,
+   2.147784444970791,
+   1.8938583548579195,
+   1.9108665129328382,
+   2.020877196080431,
+   2.357859818794348
+  ]
+ },
+ "outlier_win_ratio/default": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   2.7111668457799216,
+   2.9173891644992245,
+   2.8750732003740036,
+   3.1046968252318132,
+   3.0093849421168835,
+   3.0448030359676066
+  ]
+ },
+ "outlier_win_ratio/q95": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   2.2091585705169017,
+   2.2511714106690195,
+   2.1392564985806573,
+   2.077487734733577,
+   1.9808284680773296,
+   2.2024014975271453
+  ]
+ },
+ "semi_deviation/default": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   0.03191714493726472,
+   0.033339641726443645,
+   0.03431061978960827,
+   0.03205688202081375,
+   0.03508296202965653,
+   0.036427412091659714
+  ]
+ },
+ "semi_variance/default": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   0.0021732355006855745,
+   0.00248155916751097,
+   0.0026907854407932775,
+   0.0022942742732570153,
+   0.00274786431577523,
+   0.002962507203785518
+  ]
+ },
+ "skewness/default": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   -0.29930486216208213,
+   -0.28508630125289897,
+   -0.3607496376913965,
+   -0.39087928110832176,
+   -0.36500533848794403,
+   -0.35296944018497023
+  ]
+ },
+ "skewness/fisher": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   -0.3016667670262989,
+   -0.28733600316815266,
+   -0.36359642179598056,
+   -0.3939638273088153,
+   -0.3678857056099886,
+   -0.3557548284064328
+  ]
+ },
+ "skewness/sample": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   -0.30403897599181584,
+   -0.289595519685502,
+   -0.3664556253473586,
+   -0.3970618302225729,
+   -0.37077863868888317,
+   -0.3585523682275763
+  ]
+ },
+ "tail_ratio/default": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   1.3057880540822038,
+   1.1305380250780708,
+   1.158136695318506,
+   1.0391536431188289,
+   1.0769904452427073,
+   1.0841620069124591
+  ]
+ },
+ "tail_ratio/cutoff90": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   1.3291746762973464,
+   1.463735755778935,
+   1.216536255909988,
+   1.2499474549732363,
+   1.347642357198291,
+   1.2526864224715708
+  ]
+ },
+ "upside_frequency/default": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   0.65625,
+   0.6458333333333334,
+   0.640625,
+   0.6666666666666666,
+   0.625,
+   0.625
+  ]
+ },
+ "upside_frequency/mar": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   0.6041666666666666,
+   0.625,
+   0.6197916666666666,
+   0.6197916666666666,
+   0.5885416666666666,
+   0.578125
+  ]
+ },
+ "upside_risk/default": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   0.0371032498486201,
+   0.037696330654656725,
+   0.037331255870447604,
+   0.03497841367663694,
+   0.03833319207313588,
+   0.04048008857625159
+  ]
+ },
+ "upside_risk/subset": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   0.04580124596898049,
+   0.04690712874895772,
+   0.04664130132251129,
+   0.04283963275987451,
+   0.04848807877432848,
+   0.05120371191452705
+  ]
+ },
+ "upside_risk/variance": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   0.0013766511493291276,
+   0.0014210133448252123,
+   0.0013936226648648287,
+   0.0012234894233339423,
+   0.0014694336145159275,
+   0.0016386375711411746
+  ]
+ },
+ "upside_risk/potential": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   0.024456232546083336,
+   0.024393576359097918,
+   0.0244049080730625,
+   0.022864808252369796,
+   0.02416976687895417,
+   0.025945266336585938
+  ]
+ },
+ "var/default": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   -0.06304845342099995,
+   -0.07521048880299999,
+   -0.070368182006,
+   -0.06856737550199996,
+   -0.07112584890549999,
+   -0.08432967481849997
+  ]
+ },
+ "var/gaussian": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   -0.05794238740413747,
+   -0.06224435487299145,
+   -0.06446028447313532,
+   -0.05942043489060092,
+   -0.06690890753745138,
+   -0.06817653477025931
+  ]
+ },
+ "var/modified": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   -0.061205901654593955,
+   -0.06535016077051234,
+   -0.06879049019358066,
+   -0.06348603734111116,
+   -0.06967149605703439,
+   -0.07235905346362846
+  ]
+ },
+ "var/c99": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   -0.09756376114389999,
+   -0.10096547609899999,
+   -0.105333753681,
+   -0.107013282268,
+   -0.09622571656409998,
+   -0.11505936302599999
+  ]
+ },
+ "var/higher": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   -0.0599101348,
+   -0.07507871155,
+   -0.0695900858,
+   -0.06588669951,
+   -0.07062146893,
+   -0.08274018809
+  ]
+ },
+ "var/gaussian_ddof1": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   -0.05812794020807707,
+   -0.06243843579575511,
+   -0.06465770247972327,
+   -0.05960428954770185,
+   -0.06711251664243684,
+   -0.0683875411328198
+  ]
+ },
+ "volatility/default": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   0.14986337772206987,
+   0.15675118898361395,
+   0.15944641450989444,
+   0.14849185427585182,
+   0.16444671037155542,
+   0.17042117145508223
+  ]
+ },
+ "volatility/per_period": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   0.0432618307347518,
+   0.04525017057774171,
+   0.04602821516930411,
+   0.042865906019314864,
+   0.047471676250182976,
+   0.04919635460760155
+  ]
+ },
+ "volatility/ddof0": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   0.1494725990185497,
+   0.15634244985510007,
+   0.15903064740194447,
+   0.1481046519107427,
+   0.16401790466028732,
+   0.1699767869400267
+  ]
+ },
+ "volatility/daily": {
+  "type": "Series",
+  "name": null,
+  "index_name": null,
+  "index": [
+   "SPY",
+   "FCNTX"
+  ],
+  "values": [
+   0.171104554192491,
+   0.19266806211740992
+  ]
+ }
+}

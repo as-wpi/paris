@@ -1,0 +1,485 @@
+{
+ "cvar_contribution/default": {
+  "type": "Series",
+  "name": "contribution",
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   -0.025749749098800002,
+   -0.0186079298954,
+   -0.018670268473199997,
+   -0.0090274140462,
+   -0.008307710535400002,
+   -0.009944640304100002
+  ]
+ },
+ "cvar_contribution/gaussian": {
+  "type": "Series",
+  "name": "contribution",
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   -0.022463540095439955,
+   -0.01608533117592002,
+   -0.016454376704652468,
+   -0.00761038910176442,
+   -0.007375778474767417,
+   -0.008628294492425437
+  ]
+ },
+ "cvar_contribution/modified": {
+  "type": "Series",
+  "name": "contribution",
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   -0.02520041304294061,
+   -0.018222821910446007,
+   -0.018065244462886088,
+   -0.00890057204187774,
+   -0.009057644441913832,
+   -0.009974893192083613
+  ]
+ },
+ "cvar_contribution/pct": {
+  "type": "Series",
+  "name": "pct_contribution",
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   0.2851334446178792,
+   0.20605028530280609,
+   0.2067405760451544,
+   0.09996282500107108,
+   0.09199336711040962,
+   0.11011950192267972
+  ]
+ },
+ "cvar_contribution/c99": {
+  "type": "Series",
+  "name": "contribution",
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   -0.032472944025,
+   -0.02322089343,
+   -0.020240586717,
+   -0.011505341510000001,
+   -0.013614551338500001,
+   -0.01336563268
+  ]
+ },
+ "cvar_contribution/modified_non_operational": {
+  "type": "Series",
+  "name": "contribution",
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   -0.02520041304294061,
+   -0.018222821910446007,
+   -0.018065244462886088,
+   -0.00890057204187774,
+   -0.009057644441913832,
+   -0.009974893192083613
+  ]
+ },
+ "cvar_contribution/gaussian_ddof0": {
+  "type": "Series",
+  "name": "contribution",
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   -0.022394770821178054,
+   -0.016037133895825673,
+   -0.016405707074117617,
+   -0.007587701255466735,
+   -0.007353684766507217,
+   -0.008602527510862828
+  ]
+ },
+ "cvar_contribution/lower": {
+  "type": "Series",
+  "name": "contribution",
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   -0.026172560727000003,
+   -0.019000554330666667,
+   -0.019245447861999998,
+   -0.009232196081666666,
+   -0.008872867593444446,
+   -0.010089985035111111
+  ]
+ },
+ "marginal_cvar/default": {
+  "type": "Series",
+  "name": "marginal",
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   -0.002221317398328551,
+   0.0006829842809750186,
+   0.0007609075032250223,
+   -3.730210122204758e-06,
+   -0.0008034007776777652,
+   0.0010154100764333263
+  ]
+ },
+ "marginal_cvar/gaussian": {
+  "type": "Series",
+  "name": "marginal",
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   -0.0018339815112154018,
+   0.00039194913256009045,
+   0.0008061181165017473,
+   -0.0002950450632056567,
+   -0.0007007574930936594,
+   0.0008127045792731546
+  ]
+ },
+ "marginal_cvar/modified": {
+  "type": "Series",
+  "name": "marginal",
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   -0.002535102352454119,
+   0.00037623524994040425,
+   1.597037321197925e-05,
+   -5.95942679725292e-05,
+   -0.00022392168173009097,
+   0.0011117497306203789
+  ]
+ },
+ "marginal_var/default": {
+  "type": "Series",
+  "name": "marginal",
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   -0.0019431831788428583,
+   0.0014459905166750026,
+   -0.0006813263819499954,
+   -0.0002831022695888863,
+   -0.0018157411428110642,
+   0.002062646091911119
+  ]
+ },
+ "marginal_var/gaussian": {
+  "type": "Series",
+  "name": "marginal",
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   -0.0015555681987158912,
+   0.00031090336742362057,
+   0.0006887512853366584,
+   -0.0002115261815308911,
+   -0.0005365717805892734,
+   0.0006351425721701914
+  ]
+ },
+ "marginal_var/modified": {
+  "type": "Series",
+  "name": "marginal",
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   -0.0016540699502968076,
+   0.00017721440155163415,
+   0.0008160025619673994,
+   -0.00017377735467030697,
+   -0.000489478524135431,
+   0.0006970412773475987
+  ]
+ },
+ "var_contribution/default": {
+  "type": "Series",
+  "name": "contribution",
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   -0.017120969699202137,
+   -0.012340964748108146,
+   -0.012673314157720729,
+   -0.005847808104867769,
+   -0.005659355072587394,
+   -0.006626500604467012
+  ]
+ },
+ "var_contribution/modified": {
+  "type": "Series",
+  "name": "contribution",
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   -0.018188309380800252,
+   -0.01300535911640596,
+   -0.013553979747134189,
+   -0.006270409103633879,
+   -0.006088379025593866,
+   -0.0070697229481850275
+  ]
+ },
+ "var_contribution/pct": {
+  "type": "Series",
+  "name": "pct_contribution",
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   0.28407630105016507,
+   0.2047650149860623,
+   0.2102794567844932,
+   0.09702859854716216,
+   0.09390172890879167,
+   0.1099488997233256
+  ]
+ },
+ "var_contribution/c99": {
+  "type": "Series",
+  "name": "contribution",
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   -0.025834266329090378,
+   -0.018447721038955447,
+   -0.01883991882628567,
+   -0.008722433972405142,
+   -0.008458701667291723,
+   -0.009891263189525627
+  ]
+ },
+ "var_contribution/ddof0": {
+  "type": "Series",
+  "name": "contribution",
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   -0.01706613153182332,
+   -0.012302531151979861,
+   -0.01263450389871798,
+   -0.005829716305498201,
+   -0.0056417370522637055,
+   -0.006605953433322008
+  ]
+ },
+ "volatility_contribution/default": {
+  "type": "Series",
+  "name": "contribution",
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   0.0442905351845355,
+   0.031041236842022316,
+   0.031345451973405325,
+   0.014612003187382934,
+   0.014229351313620072,
+   0.016595106110205763
+  ]
+ },
+ "volatility_contribution/pct": {
+  "type": "Series",
+  "name": "pct_contribution",
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   0.2911673285526515,
+   0.20406603732838977,
+   0.2060659568764609,
+   0.09605975441810949,
+   0.09354418933439605,
+   0.10909673348999228
+  ]
+ },
+ "volatility_contribution/per_period": {
+  "type": "Series",
+  "name": "contribution",
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   0.01278557620567208,
+   0.008960833223360257,
+   0.009048652567358026,
+   0.004218121986817603,
+   0.004107659905656152,
+   0.0047905944899788505
+  ]
+ },
+ "volatility_contribution/ddof0": {
+  "type": "Series",
+  "name": "contribution",
+  "index_name": null,
+  "index": [
+   "FCNTX",
+   "AGTHX",
+   "FMAGX",
+   "AMCPX",
+   "DODGX",
+   "PRGFX"
+  ],
+  "values": [
+   0.0441750446745743,
+   0.030960294756816664,
+   0.031263716627054475,
+   0.014573901419304622,
+   0.014192247335698384,
+   0.016551833269641922
+  ]
+ }
+}

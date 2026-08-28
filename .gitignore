@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+dist/
+.ipynb_checkpoints/
+.pytest_cache/
+.DS_Store
+.ruff_cache/
+NEXT_STEPS.local.md
