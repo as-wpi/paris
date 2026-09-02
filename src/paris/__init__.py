@@ -18,13 +18,15 @@ upon for investment, trading, reporting or any other decision-making. The librar
 responsible for independently verifying every number, method and convention before use. See
 ``DISCLAIMER.md`` for the full statement.
 """
-from paris import attribution, budgeting, data, drawdown, ratios, relative, returns, risk, tables
+from paris import (attribution, budgeting, data, drawdown, ratios, regimes, relative, returns, risk,
+                   tables)
 from paris._core import AlignmentError, FrequencyError, GapError, ParisError
 from paris.attribution import *
 from paris.budgeting import *
 from paris.drawdown import *
 from paris.portfolio import Portfolio
 from paris.ratios import *
+from paris.regimes import *
 from paris.relative import *
 from paris.returns import *
 from paris.risk import *
@@ -36,5 +38,5 @@ __all__ = (
     ["ParisError", "GapError", "FrequencyError", "AlignmentError", "Portfolio", "stats",
      "ABSOLUTE_METRICS", "RELATIVE_METRICS", "data", "__version__"]
     + returns.__all__ + risk.__all__ + drawdown.__all__ + ratios.__all__ + relative.__all__
-    + tables.__all__ + attribution.__all__ + budgeting.__all__
+    + tables.__all__ + attribution.__all__ + budgeting.__all__ + regimes.__all__
 )

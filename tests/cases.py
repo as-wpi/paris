@@ -467,6 +467,89 @@ _add(
     },
 )
 
+# ----------------------------------------------------------------------------- regimes
+IWF = In("iwf")
+_abs(
+    "momentum_signal",
+    fast={"signal": "fast"},
+    compound={"compound": True},
+    excess_rf_series={"basis": "excess", "rf": RF},
+    relative_iwf={"basis": "relative", "benchmark": IWF},
+    lookbacks_6_2={"slow": 6, "fast": 2},
+)
+_add("momentum_signal", {"daily": ((DAILY,), {}), "series": ((SPX,), {})})
+_abs(
+    "momentum_states",
+    codes={"codes": True},
+    compound={"compound": True},
+    excess_rf_series={"basis": "excess", "rf": RF},
+    excess_rf_scalar={"basis": "excess", "rf": 0.02},
+    relative_default_spx={"basis": "relative"},
+    relative_iwf={"basis": "relative", "benchmark": IWF},
+    lookbacks_6_2={"slow": 6, "fast": 2},
+)
+_add(
+    "momentum_states",
+    {
+        "series": ((SPX,), {}),
+        "daily": ((DAILY,), {}),
+        "daily_compound_codes": ((DAILY,), {"compound": True, "codes": True}),
+        "daily_relative_default_spx": ((In("daily_fcntx"),), {"basis": "relative"}),
+    },
+)
+_add(
+    "momentum_state",
+    {
+        "frame": ((FUNDS,), {}),
+        "series": ((FCNTX,), {}),
+        "excess_rf_series": ((FUNDS,), {"basis": "excess", "rf": RF}),
+        "relative_default_spx": ((FUNDS,), {"basis": "relative"}),
+        "daily": ((DAILY,), {}),
+    },
+)
+_abs("momentum_state_age", excess_rf_series={"basis": "excess", "rf": RF}, compound={"compound": True})
+_add("momentum_state_age", {"series": ((FCNTX,), {}), "daily": ((DAILY,), {})})
+_add(
+    "momentum_state_table",
+    {
+        "default": ((FUNDS,), {}),
+        "series": ((SPX,), {}),
+        "excess_rf_series": ((SPX,), {"basis": "excess", "rf": RF}),
+        "relative_iwf": ((FUNDS,), {"basis": "relative", "benchmark": IWF}),
+        "daily": ((DAILY,), {}),
+    },
+)
+_add(
+    "momentum_transitions",
+    {
+        "default": ((FUNDS,), {}),
+        "series": ((SPX,), {}),
+        "excess_rf_series": ((SPX,), {"basis": "excess", "rf": RF}),
+        "daily": ((DAILY,), {}),
+    },
+)
+_add(
+    "momentum_speed_weights",
+    {
+        "default": ((FUNDS,), {}),
+        "slow": ((FUNDS,), {"a": 0.0}),
+        "fast": ((FUNDS,), {"a": 1.0}),
+        "speeds": ((FUNDS,), {"speeds": {"Correction": 0.0, "Rebound": 1.0}}),
+        "series_excess": ((SPX,), {"basis": "excess", "rf": RF}),
+        "daily": ((DAILY,), {"a": 0.75}),
+    },
+)
+_add(
+    "dynamic_speeds",
+    {
+        "default": ((FUNDS,), {}),
+        "series": ((SPX,), {}),
+        "excess_rf_series": ((SPX,), {"basis": "excess", "rf": RF}),
+        "relative_default_spx": ((FUNDS,), {"basis": "relative"}),
+        "daily": ((DAILY,), {}),
+    },
+)
+
 _ids = [c.id for c in CASES]
 assert len(_ids) == len(set(_ids)), "duplicate case ids"
 BY_MODULE: dict[str, list[Case]] = {}

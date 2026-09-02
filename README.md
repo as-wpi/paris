@@ -49,6 +49,12 @@ style   = m[["IWF", "IWD"]].set_axis(["Growth", "Value"], axis=1)
 paris.brinson(sleeves, [0.6, 0.4], style, [0.5, 0.5])     # allocation / selection / interaction per category
 paris.volatility_contribution(funds, w, pct=True) # Euler risk shares; also var_/cvar_contribution, marginal_var
 paris.Portfolio(funds, weights=w, benchmark=spx, rf=rf).sharpe()        # every stat on the weighted portfolio
+
+paris.momentum_states(funds)                      # Bull / Correction / Bear / Rebound per month (Goulding-Harvey-Mazzoleni 2023)
+paris.momentum_state(funds, basis="excess", rf=rf)          # latest state on excess returns (the paper's construction)
+paris.momentum_state(funds, basis="relative")               # ... relative to the bundled S&P 500 proxy (or benchmark=)
+paris.momentum_state_table(spx), paris.momentum_transitions(spx)  # subsequent-return moments by state; transition matrix
+paris.momentum_speed_weights(spx, speeds=paris.dynamic_speeds(spx.loc[:"2017"]))  # state-dependent momentum positions
 ```
 
 Inputs: pandas Series/DataFrame with a DatetimeIndex (daily, weekly, monthly, quarterly, yearly —
@@ -90,6 +96,7 @@ vendor-specific ships.
 | `tables.py` | capture, downside, distribution, annualised-returns, calendar (month grid + annual), drawdown summary and ratio tables, `rolling(fn, window)` — every cell is a call to a topic-module function (imports the topic modules) |
 | `attribution.py` | weights → portfolio return with drift / rebalancing, per-period contributions, BOP/EOP weights, linked multi-period contributions, active contribution, Brinson attribution (BF/BHB; Carino, Menchero or arithmetic linking) |
 | `budgeting.py` | Euler contributions to volatility, VaR (Gaussian, Cornish-Fisher) and CVaR (historical, Gaussian, Cornish-Fisher) for one weight vector; marginal VaR / CVaR |
+| `regimes.py` | Goulding–Harvey–Mazzoleni (2023) momentum turning points: slow/fast signals, Bull / Correction / Bear / Rebound state series on a raw, excess-of-rf or benchmark-relative basis (S&P 500 default), latest state and its age, conditional subsequent-return table, transition matrix, intermediate-speed strategy weights and the Sharpe-maximising dynamic speeds (imports `paris.data` lazily for the default benchmark) |
 | `summary.py` / `portfolio.py` | `stats()` table and the `Portfolio` convenience wrapper (these two import all topic modules) |
 
 Defaults follow the industry-standard R reference package; every convention that differs between

@@ -5,6 +5,24 @@ All notable changes to PARIS are recorded here, one section per release. Version
 are never changed silently: a change to a default convention is a breaking change and is listed
 under **Changed**.
 
+## 0.6.0 — Unreleased
+
+### Added
+- `regimes`: market regimes from slow and fast time-series momentum after Goulding, Harvey &
+  Mazzoleni (2023, *Journal of Financial Economics* 149(3), 378–406). `momentum_states` labels
+  every period Bull / Correction / Bear / Rebound from the signs of the trailing slow and fast
+  arithmetic-mean returns (12/1 monthly, 252/21 daily, 52/4 weekly, 4/1 quarterly by default;
+  `compound=True` for compounded trailing returns; `codes=True` for integers). `basis` chooses the
+  return series the signals see: `"raw"`, `"excess"` (minus `rf`, the paper's construction) or
+  `"relative"` (minus `benchmark`, the bundled S&P 500 proxy by default). Also
+  `momentum_signal`, `momentum_state` (latest), `momentum_state_age`, `momentum_state_table`
+  (the paper's Figure 1: subsequent-return moments by state), `momentum_transitions` (Table 7),
+  `momentum_speed_weights` (equation 11 / 30 positions for a static or state-dependent speed) and
+  `dynamic_speeds` (Proposition 9 closed form, clipped to [0, 1]). Reproduces the paper's US
+  frequencies, conditional moments, transition matrix and DYN speeds from the Fama–French market
+  factor (1969–2018) and matches a daily 252/21 close-based classifier exactly.
+- `Portfolio` exposes the regime functions with `rf` and `benchmark` pre-filled.
+
 ## 0.5.1 — 2026-08-28 — Initial public release
 
 ### Added
