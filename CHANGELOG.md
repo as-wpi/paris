@@ -5,7 +5,7 @@ All notable changes to PARIS are recorded here, one section per release. Version
 are never changed silently: a change to a default convention is a breaking change and is listed
 under **Changed**.
 
-## 0.6.0 — Unreleased
+## 0.6.0 — 2026-09-02 — Regimes, drawdown distributions, Kelly and deflated Sharpe (fork: as-wpi/paris)
 
 ### Added
 - `regimes`: market regimes from slow and fast time-series momentum after Goulding, Harvey &

@@ -90,8 +90,8 @@ vendor-specific ships.
 |---|---|
 | `returns.py` | total / annualised return, CAGR, cumulative & wealth index, period returns, calendar tables, best/worst, win rate, streaks, excess & active returns |
 | `risk.py` | volatility, downside/upside/semi deviation, skewness, kurtosis, VaR & CVaR (historical, gaussian, Cornish-Fisher), tail & outlier ratios |
-| `drawdown.py` | drawdown series & episode table, max/average/longest drawdown, ulcer & pain index, Calmar, Sterling, Burke, Pain, Martin ratios, recovery factor |
-| `ratios.py` | Sharpe (incl. VaR/ES-based, smart, probabilistic, adjusted), Sortino, Omega, Kappa, upside potential, profit factor, gain-to-pain, payoff, CPC, common-sense, Kelly, risk of ruin, prospect, serenity |
+| `drawdown.py` | drawdown series & episode table, max/average/longest drawdown, ulcer & pain index, rolling ulcer, drawdown / rolling-ulcer distribution table, Calmar, Sterling (with trailing `window`), Burke, Pain, Martin ratios (period-count or calendar-day annualisation), recovery factor |
+| `ratios.py` | Sharpe (incl. VaR/ES-based, smart, probabilistic, deflated, adjusted), minimum track record, Sortino, Omega, Kappa, upside potential, profit factor, gain-to-pain, payoff, CPC, common-sense, Kelly leverage (fractional, with a confidence interval), risk of ruin, prospect, serenity |
 | `relative.py` | beta/alpha (CAPM, bull/bear, timing), Jensen, Treynor, tracking error, information ratio, active premium, systematic/specific/total risk, appraisal, Fama beta, selectivity, M², capture & number/percentage ratios, batting average, regression table |
 | `tables.py` | capture, downside, distribution, annualised-returns, calendar (month grid + annual), drawdown summary and ratio tables, `rolling(fn, window)` — every cell is a call to a topic-module function (imports the topic modules) |
 | `attribution.py` | weights → portfolio return with drift / rebalancing, per-period contributions, BOP/EOP weights, linked multi-period contributions, active contribution, Brinson attribution (BF/BHB; Carino, Menchero or arithmetic linking) |
