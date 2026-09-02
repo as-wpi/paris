@@ -40,7 +40,7 @@
    "Payoff Ratio",
    "Profit Factor",
    "Tail Ratio",
-   "Kelly (half)"
+   "Kelly leverage (half)"
   ],
   "columns": [
    "FCNTX",
@@ -390,7 +390,7 @@
    "Payoff Ratio",
    "Profit Factor",
    "Tail Ratio",
-   "Kelly (half)",
+   "Kelly leverage (half)",
    "Beta",
    "Alpha (ann.)",
    "Jensen Alpha",
@@ -968,7 +968,7 @@
    "Payoff Ratio",
    "Profit Factor",
    "Tail Ratio",
-   "Kelly (half)",
+   "Kelly leverage (half)",
    "Beta",
    "Alpha (ann.)",
    "Jensen Alpha",
@@ -1489,7 +1489,7 @@
    "Payoff Ratio",
    "Profit Factor",
    "Tail Ratio",
-   "Kelly (half)",
+   "Kelly leverage (half)",
    "Beta",
    "Alpha (ann.)",
    "Jensen Alpha",

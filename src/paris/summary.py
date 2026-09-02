@@ -53,7 +53,7 @@ ABSOLUTE_METRICS: dict[str, Callable[..., Any]] = {
     "Payoff Ratio": lambda r, **k: Q.payoff_ratio(r),
     "Profit Factor": lambda r, **k: Q.profit_factor(r),
     "Tail Ratio": lambda r, **k: K.tail_ratio(r),
-    "Kelly (half)": lambda r, rf, ppy: Q.kelly_ratio(r, rf, ppy, half=True),
+    "Kelly leverage (half)": lambda r, rf, ppy: Q.kelly_ratio(r, rf, ppy, half=True),
 }
 
 RELATIVE_METRICS: dict[str, Callable[..., Any]] = {

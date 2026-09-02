@@ -20,6 +20,7 @@ from paris._core import (
     _cdf,
     _downside,
     _es_series,
+    _ppf,
     _std_moment,
     _var_series,
     annualize_return,
@@ -36,10 +37,13 @@ __all__ = [
     "common_sense_ratio",
     "cpc_index",
     "d_ratio",
+    "deflated_sharpe",
     "gain_to_pain_ratio",
     "kappa",
     "kelly_criterion",
+    "kelly_interval",
     "kelly_ratio",
+    "min_track_record",
     "omega",
     "payoff_ratio",
     "probabilistic_sharpe",
@@ -113,18 +117,88 @@ def probabilistic_sharpe(returns: Any, rf: Any = 0.0, benchmark_sharpe: float = 
     p = prepare(returns, rf=rf, periods_per_year=periods_per_year, compounding=compounding)
 
     def fn(x: pd.Series) -> float:
-        n = len(x)
-        if n < 4 or np.ptp(x.values) == 0.0:  # no dispersion / no sample moments: undefined
+        sr, g3, g4, n = _sr_moments(x, method)
+        if np.isnan(sr):
             return float("nan")
-        sr = x.mean() / x.std(ddof=1)
-        if method == "sample":
-            g3, g4 = x.skew(), x.kurt() + 3  # bias-corrected (Fisher) sample estimates
-        elif method == "moment":
-            g3, g4 = _skew(x), _kurt(x)  # population moments
-        else:
-            raise ValueError("method must be 'sample' or 'moment'")
         sigma = np.sqrt((1 - g3 * sr + (g4 - 1) / 4 * sr**2) / (n - 1))
         return float(_cdf((sr - benchmark_sharpe) / sigma))
+    return result(p, fn, p.excess)
+
+
+def _sr_moments(x: pd.Series, method: str) -> tuple[float, float, float, int]:
+    """Per-period Sharpe, skewness, non-excess kurtosis and n of an excess-return series, as used
+    by the probabilistic / deflated Sharpe ratio; NaN Sharpe when the moments are undefined."""
+    if method not in ("sample", "moment"):
+        raise ValueError("method must be 'sample' or 'moment'")
+    n = len(x)
+    if n < 4 or np.ptp(x.values) == 0.0:  # no dispersion / no sample moments: undefined
+        return float("nan"), float("nan"), float("nan"), n
+    sr = float(x.mean() / x.std(ddof=1))
+    if method == "sample":
+        g3, g4 = float(x.skew()), float(x.kurt() + 3)  # bias-corrected (Fisher) sample estimates
+    else:
+        g3, g4 = _skew(x), _kurt(x)  # population moments
+    return sr, g3, g4, n
+
+
+_EULER_GAMMA = 0.5772156649015329
+
+
+def deflated_sharpe(returns: Any, rf: Any = 0.0, trials: Any = 1, sharpe_variance: float | None = None,
+                    periods_per_year: int | None = None, compounding: bool = True,
+                    method: str = "sample") -> Any:
+    """Deflated Sharpe ratio (Bailey & Lopez de Prado 2014): the probabilistic Sharpe ratio
+    against the expected maximum per-period Sharpe of ``N`` independent trials,
+    ``SR0 = sqrt(V) ((1 - g) Phi^-1(1 - 1/N) + g Phi^-1(1 - 1/(N e)))`` with ``g`` the
+    Euler-Mascheroni constant and ``V`` the variance of the trials' per-period Sharpe ratios.
+    ``trials`` is the number ``N`` (then ``sharpe_variance`` supplies ``V``) or the sequence of the
+    trials' per-period Sharpe ratios (``N`` and ``V`` are taken from it, ``ddof=1``). With
+    ``N = 1`` there is no selection to deflate and the result equals ``probabilistic_sharpe``."""
+    if np.isscalar(trials):
+        n_trials = int(trials)
+        if n_trials < 1:
+            raise ValueError("trials must be >= 1")
+        if n_trials > 1 and sharpe_variance is None:
+            raise ValueError("sharpe_variance is needed when trials is a count > 1")
+        var = 0.0 if n_trials == 1 else float(sharpe_variance)
+    else:
+        srs = np.asarray(trials, dtype=float).ravel()
+        if len(srs) < 2:
+            raise ValueError("trials as a sequence needs at least two Sharpe ratios")
+        if sharpe_variance is not None:
+            raise ValueError("pass either a sequence of trial Sharpe ratios or a count with sharpe_variance")
+        n_trials, var = len(srs), float(srs.var(ddof=1))
+    if var < 0:
+        raise ValueError("sharpe_variance must be nonnegative")
+    if n_trials == 1 or var == 0.0:
+        sr0 = 0.0
+    else:
+        sr0 = np.sqrt(var) * ((1 - _EULER_GAMMA) * _ppf(1 - 1 / n_trials)
+                              + _EULER_GAMMA * _ppf(1 - 1 / (n_trials * np.e)))
+    return probabilistic_sharpe(returns, rf, sr0, periods_per_year, compounding, method)
+
+
+def min_track_record(returns: Any, rf: Any = 0.0, benchmark_sharpe: float = 0.0,
+                     confidence: float = 0.95, periods_per_year: int | None = None,
+                     compounding: bool = True, method: str = "sample", years: bool = False) -> Any:
+    """Minimum track record length (Bailey & Lopez de Prado 2012): observations needed for the
+    probabilistic Sharpe ratio to reach ``confidence`` against ``benchmark_sharpe`` (per-period):
+    ``1 + (1 - g3 SR + (g4 - 1)/4 SR^2) (Phi^-1(confidence) / (SR - SR*))^2`` with the sample
+    per-period Sharpe ``SR`` and moments as ``probabilistic_sharpe``. ``+inf`` when ``SR <= SR*``;
+    ``years=True`` divides by the periods per year."""
+    if not 0 < confidence < 1:
+        raise ValueError("confidence must be in (0, 1)")
+    p = prepare(returns, rf=rf, periods_per_year=periods_per_year, compounding=compounding)
+    z = _ppf(confidence)
+
+    def fn(x: pd.Series) -> float:
+        sr, g3, g4, _ = _sr_moments(x, method)
+        if np.isnan(sr):
+            return float("nan")
+        if sr <= benchmark_sharpe:
+            return float("inf")
+        n = 1 + (1 - g3 * sr + (g4 - 1) / 4 * sr**2) * (z / (sr - benchmark_sharpe)) ** 2
+        return float(n / p.ppy) if years else float(n)
     return result(p, fn, p.excess)
 
 
@@ -280,15 +354,52 @@ def risk_of_ruin(returns: Any) -> Any:
 
 
 def kelly_ratio(returns: Any, rf: Any = 0.0, periods_per_year: int | None = None, half: bool = False,
-                compounding: bool = True) -> Any:
-    """Continuous Kelly leverage ``mean(r - rf) / var(r)``; ``half`` halves it."""
+                compounding: bool = True, fraction: float = 1.0, excess_var: bool = False) -> Any:
+    """Continuous-time Kelly leverage (Merton 1969; Thorp 2006) ``mean(r - rf) / var(r)``: the
+    multiple of wealth to hold in the asset under log utility. Dimensionless and invariant to the
+    return frequency (both moments scale with the period). ``half`` halves it, the usual
+    practitioner haircut for estimation error; ``fraction`` scales it (``fraction=0.5`` equals
+    ``half=True``; both together compound). ``excess_var=True`` divides by the variance of the
+    excess return instead of the raw return. Sample variance (``ddof=1``). The point estimate is
+    noisy - see :func:`kelly_interval` - and assumes continuous rebalancing of a diffusion."""
     p = prepare(returns, rf=rf, periods_per_year=periods_per_year, compounding=compounding)
     ex = p.excess
+    scale = fraction * (0.5 if half else 1.0)
 
     def fn(s: pd.Series) -> float:
-        k = ex[s.name].mean() / s.var(ddof=1)
-        return float(k / 2 if half else k)
+        den = ex[s.name].var(ddof=1) if excess_var else s.var(ddof=1)
+        return float(scale * ex[s.name].mean() / den)
     return result(p, fn)
+
+
+def kelly_interval(returns: Any, rf: Any = 0.0, periods_per_year: int | None = None,
+                   confidence: float = 0.95, half: bool = False, compounding: bool = True,
+                   fraction: float = 1.0, excess_var: bool = False) -> Any:
+    """Two-sided ``confidence`` interval for the Kelly leverage from the delta method under
+    normality: ``Var(f) ~ 1/(n s^2) + 2 m^2 / (s^4 (n - 1))`` (sampling error of the mean and of
+    the variance; ``m``, ``s`` the per-period mean excess return and sd used in the denominator),
+    scaled like :func:`kelly_ratio`. Rows ``lower``, ``kelly``, ``upper``; Series in, a Series of
+    three; DataFrame in, one column per fund. Estimation error only - it says nothing about fat
+    tails or the diffusion assumption."""
+    if not 0 < confidence < 1:
+        raise ValueError("confidence must be in (0, 1)")
+    p = prepare(returns, rf=rf, periods_per_year=periods_per_year, compounding=compounding)
+    ex = p.excess
+    scale = fraction * (0.5 if half else 1.0)
+    z = _ppf((1 + confidence) / 2)
+
+    def fn(s: pd.Series) -> pd.Series:
+        n = len(s)
+        var = ex[s.name].var(ddof=1) if excess_var else s.var(ddof=1)
+        m = ex[s.name].mean()
+        k = m / var
+        se = np.sqrt(1 / (n * var) + 2 * m**2 / (var**2 * (n - 1))) if n > 1 else float("nan")
+        return pd.Series([scale * (k - z * se), scale * k, scale * (k + z * se)],
+                         index=["lower", "kelly", "upper"], dtype=float)
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        out = pd.DataFrame({c: fn(p.returns[c]) for c in p.returns.columns})
+    return out if p.multi else out.iloc[:, 0]
 
 
 def kelly_criterion(returns: Any) -> Any:

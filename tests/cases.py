@@ -525,6 +525,32 @@ _add(
     },
 )
 
+# ----------------------------------------------------------------------------- ratios (0.6.0)
+_add(
+    "kelly_ratio",
+    {
+        "fraction": ((FUNDS,), {"fraction": 0.25}),
+        "half_fraction": ((FUNDS,), {"half": True, "fraction": 0.5}),
+        "excess_var_rf_series": ((FUNDS,), {"excess_var": True, "rf": RF}),
+    },
+)
+_abs("kelly_interval", c90={"confidence": 0.90}, half={"half": True}, excess_var={"excess_var": True}, **RF_BOTH)
+_add("kelly_interval", {"series": ((FCNTX,), {"rf": RF}), "daily": ((DAILY,), {})})
+_abs(
+    "deflated_sharpe",
+    trials10={"trials": 10, "sharpe_variance": 0.01},
+    trial_sharpes={"trials": [0.05, 0.10, 0.20, 0.15, 0.30]},
+    moment={"trials": 10, "sharpe_variance": 0.01, "method": "moment"},
+    **RF_BOTH,
+)
+_abs(
+    "min_track_record",
+    benchmark05={"benchmark_sharpe": 0.05},
+    years={"years": True},
+    c99={"confidence": 0.99},
+    moment={"method": "moment"},
+    **RF_BOTH,
+)
 # ----------------------------------------------------------------------------- regimes
 IWF = In("iwf")
 _abs(

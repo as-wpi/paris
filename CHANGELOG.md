@@ -31,6 +31,21 @@ under **Changed**.
 - `calmar_ratio`, `sterling_ratio`, `martin_ratio`, `pain_ratio`, `burke_ratio` take
   `method="calendar"` (`days_in_year`, `start`) to annualise over elapsed calendar days, the
   convention of `cagr(method="calendar")`. Defaults are unchanged.
+- `kelly_ratio` takes `fraction` (fractional Kelly; `half=True` is `fraction=0.5`) and
+  `excess_var=True` (variance of the excess rather than the raw return). The docstring names the
+  convention: continuous-time Kelly leverage ``mean(r - rf) / var(r)`` (Merton 1969; Thorp 2006).
+- `kelly_interval`: delta-method confidence interval for the Kelly leverage (`lower`, `kelly`,
+  `upper`), sampling error of the mean and of the variance under normality.
+- `deflated_sharpe` (Bailey & López de Prado 2014): the probabilistic Sharpe ratio against the
+  expected maximum Sharpe of `trials` independent strategies (a count with `sharpe_variance`, or
+  the sequence of the trials' per-period Sharpe ratios); equals `probabilistic_sharpe` for one trial.
+- `min_track_record` (Bailey & López de Prado 2012): observations (or `years=True`) needed for the
+  probabilistic Sharpe ratio to reach `confidence` against `benchmark_sharpe`; `+inf` when the
+  Sharpe does not exceed the benchmark.
+
+### Changed
+- The `stats()` row `Kelly (half)` is now labelled `Kelly leverage (half)` — the number is a
+  multiple of wealth, not a ratio. Selecting it by name (`metrics=[...]`) must use the new label.
 
 ## 0.5.1 — 2026-08-28 — Initial public release
 
