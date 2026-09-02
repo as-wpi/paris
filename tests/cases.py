@@ -467,6 +467,64 @@ _add(
     },
 )
 
+# ----------------------------------------------------------------------------- drawdown (0.6.0)
+CAL = {"method": "calendar"}
+CAL_START = {"method": "calendar", "start": "2009-12-31"}
+_add(
+    "calmar_ratio",
+    {
+        "window36": ((FUNDS,), {"window": 36}),
+        "window36_arithmetic": ((FUNDS,), {"window": 36, "geometric": False}),
+        "calendar": ((FUNDS,), CAL),
+        "calendar_start": ((FUNDS,), CAL_START),
+        "calendar_arithmetic": ((FUNDS,), {"method": "calendar", "geometric": False}),
+        "daily_window252": ((DAILY,), {"window": 252}),
+        "daily_calendar_start": ((DAILY,), {"method": "calendar", "start": "2020-12-31"}),
+    },
+)
+_add(
+    "sterling_ratio",
+    {"window36": ((FUNDS,), {"window": 36}), "calendar": ((FUNDS,), CAL), "calendar_start": ((FUNDS,), CAL_START)},
+)
+_add(
+    "martin_ratio",
+    {
+        "calendar": ((FUNDS,), CAL),
+        "calendar_start": ((FUNDS,), CAL_START),
+        "calendar_rf_series": ((FUNDS,), {"method": "calendar", "rf": RF}),
+        "daily_calendar_start": ((DAILY,), {"method": "calendar", "start": "2020-12-31"}),
+    },
+)
+_add("pain_ratio", {"calendar": ((FUNDS,), CAL), "calendar_start": ((FUNDS,), CAL_START)})
+_add("burke_ratio", {"calendar": ((FUNDS,), CAL), "calendar_start_modified": ((FUNDS,), {**CAL_START, "modified": True})})
+_add("ulcer_index", {"pct": ((FUNDS,), {"pct": True}), "pct_ddof1": ((FUNDS,), {"pct": True, "ddof": 1})})
+_add(
+    "rolling_ulcer",
+    {
+        "default": ((FUNDS, 12), {}),
+        "daily252": ((DAILY, 252), {}),
+        "series_pct": ((FCNTX, 36), {"pct": True}),
+        "untrimmed": ((FCNTX, 36), {"trim": False}),
+        "ddof1_arithmetic": ((FUNDS, 12), {"ddof": 1, "geometric": False}),
+        "default_window": ((FUNDS,), {}),
+        "daily_default_window": ((DAILY,), {}),
+    },
+)
+
+_add(
+    "drawdown_distribution",
+    {
+        "default": ((FUNDS,), {}),
+        "series": ((FCNTX,), {}),
+        "ulcer": ((FUNDS,), {"stat": "ulcer"}),
+        "ulcer_window36": ((FUNDS,), {"stat": "ulcer", "window": 36}),
+        "daily": ((DAILY,), {}),
+        "daily_ulcer": ((DAILY,), {"stat": "ulcer"}),
+        "quantiles_threshold": ((FUNDS,), {"quantiles": (0.5, 0.9), "threshold": 0.05}),
+        "arithmetic": ((FUNDS,), {"geometric": False}),
+    },
+)
+
 # ----------------------------------------------------------------------------- regimes
 IWF = In("iwf")
 _abs(

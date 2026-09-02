@@ -22,6 +22,15 @@ under **Changed**.
   frequencies, conditional moments, transition matrix and DYN speeds from the Fama–French market
   factor (1969–2018) and matches a daily 252/21 close-based classifier exactly.
 - `Portfolio` exposes the regime functions with `rf` and `benchmark` pre-filled.
+- `rolling_ulcer(returns, window)`: vectorised Ulcer Index over a sliding window, drawdowns
+  measured from the running peak of the whole history (`trim`, `ddof`, `pct` as elsewhere).
+- `drawdown_distribution`: distribution table of the per-period drawdowns or of the rolling Ulcer
+  Index (`stat="ulcer"`) — share below a threshold, mean, quantiles of the magnitude, maximum.
+- `ulcer_index(pct=True)` reports percent, as in Martin's original.
+- `calmar_ratio` / `sterling_ratio` take `window` (trailing observations, e.g. Young's 36 months).
+- `calmar_ratio`, `sterling_ratio`, `martin_ratio`, `pain_ratio`, `burke_ratio` take
+  `method="calendar"` (`days_in_year`, `start`) to annualise over elapsed calendar days, the
+  convention of `cagr(method="calendar")`. Defaults are unchanged.
 
 ## 0.5.1 — 2026-08-28 — Initial public release
 
