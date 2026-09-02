@@ -46,6 +46,18 @@ def test_ties_are_nonnegative_and_warmup_is_the_slow_window(fcntx):
     assert (paris.momentum_speed_weights(zeros).iloc[11:] == 1.0).all()
 
 
+def test_zero_returns_after_a_move_are_still_ties(fcntx):
+    # the sliding-window mean leaves ~1e-19 residues after the nonzero values leave the window;
+    # a trailing mean of exactly zero must stay nonnegative (Bull), and warm-up NaN must survive
+    r = pd.Series([0.0] * 4 + [0.037, -0.021, 0.0113] + [0.0] * 20, index=fcntx.index[:27])
+    s = paris.momentum_states(r, slow=3, fast=1)
+    assert s.iloc[:2].isna().all()
+    assert (s.iloc[10:] == "Bull").all()
+    sig = paris.momentum_signal(r, slow=3, fast=1)
+    assert (sig.iloc[10:] == 0.0).all() and sig.iloc[:2].isna().all()
+    assert (paris.momentum_signal(r, slow=3, fast=1, compound=True).iloc[10:] == 0.0).all()
+
+
 def test_default_lookbacks_follow_the_frequency(fcntx, daily):
     assert paris.momentum_states(fcntx).isna().sum() == 11
     assert paris.momentum_states(daily["SPY"]).isna().sum() == 251

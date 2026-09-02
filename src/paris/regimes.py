@@ -13,7 +13,9 @@ period into one of four observable states:
     Rebound     SLOW <  0 and FAST >= 0      possible turn from down to up
 
 Conventions:
-* Ties (a trailing mean of exactly zero) are nonnegative, as in the paper's equations (1)-(2).
+* Ties (a trailing mean of zero) are nonnegative, as in the paper's equations (1)-(2). A trailing
+  mean within 1e-15 of zero counts as zero: sliding-window sums leave residues of order 1e-19, and
+  a zero-return period computed from rounded prices carries a residue of order 1e-16.
 * ``basis`` selects the return series the signals are computed on: ``"raw"`` (the series itself),
   ``"excess"`` (minus ``rf``, the paper's construction) or ``"relative"`` (minus ``benchmark``;
   the bundled S&P 500 proxy ``SPY`` from :mod:`paris.data` when no benchmark is given).
@@ -100,10 +102,15 @@ def _signal_frame(returns: Any, basis: str, rf: Any, benchmark: Any,
     return p, p.returns
 
 
+_ZERO = 1e-15  # sliding-window sums leave residues of order 1e-19; a tie must stay a tie
+
+
 def _trailing(sig: pd.DataFrame, window: int, compound: bool) -> pd.DataFrame:
     if compound:
-        return np.expm1(np.log1p(sig).rolling(window).sum())
-    return sig.rolling(window).mean()
+        x = np.expm1(np.log1p(sig).rolling(window).sum())
+    else:
+        x = sig.rolling(window).mean()
+    return x.mask(x.abs() <= _ZERO, 0.0)  # NaN (warm-up) compares False and is kept
 
 
 def _unwrap(df: pd.DataFrame, multi: bool) -> Any:
