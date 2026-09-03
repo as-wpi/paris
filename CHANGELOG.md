@@ -5,7 +5,7 @@ All notable changes to PARIS are recorded here, one section per release. Version
 are never changed silently: a change to a default convention is a breaking change and is listed
 under **Changed**.
 
-## Unreleased
+## 0.10.0 — 2026-09-03 — Expanding-window calibration; research sequence closes the regime-improvement thread (fork: as-wpi/paris)
 
 ### Added
 - `calibration="expanding"` on `jump_states`, `jump_centers`, `risk_states`, `trend_states`,
@@ -28,6 +28,10 @@ under **Changed**.
   screener's K-ATR inside the vol-target loop on 1x and 3x panels; EWMA best tracker 15/15, all
   three RETIRE. Design decision recorded: the risk model is a diagnostic, not a gate; volatility
   enters through sizing.
+- Further pre-registered tests (all RETIRE; see `research/SEQUENCE_2026-09-03.md`): EWMA-weighted
+  Yang–Zhang in the vol-target; the four-state momentum cycle (dynamic speeds, MED, three discrete
+  rules) as a daily switch vs trend λ5; VR(5,63) and VIX term structure as switch conditions; a
+  hybrid (expanding calm centre, rolling crisis centre) calibration memory.
 
 ## 0.9.0 — 2026-09-03 — Parity for the jump-model regimes: tables, signals, fitted centres, causal sizing (fork: as-wpi/paris)
 
