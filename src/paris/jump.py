@@ -103,16 +103,20 @@ def _viterbi(loss: np.ndarray, lam: float) -> tuple[np.ndarray, float]:
             s = (back[t] >> s) & 1
             labels[t - 1] = s
         return labels, float(best)
-    pen = lam * (1.0 - np.eye(k))
-    values = np.empty_like(loss)
-    values[0] = loss[0]
+    rows = loss.tolist()
+    values = [rows[0]]
     for t in range(1, n):
-        values[t] = loss[t] + (values[t - 1][:, None] + pen).min(axis=0)
+        v = values[-1]
+        m = min(v) + lam
+        row = rows[t]
+        values.append([row[i] + (v[i] if v[i] <= m else m) for i in range(k)])
     labels = np.empty(n, dtype=int)
-    labels[-1] = int(values[-1].argmin())
+    labels[-1] = int(np.argmin(values[-1]))
     for t in range(n - 1, 0, -1):
-        labels[t - 1] = int((values[t - 1] + pen[:, labels[t]]).argmin())
-    return labels, float(values[-1].min())
+        j = labels[t]
+        v = values[t - 1]
+        labels[t - 1] = int(np.argmin([v[i] + (0.0 if i == j else lam) for i in range(k)]))
+    return labels, float(min(values[-1]))
 
 
 def _online_last(loss: np.ndarray, lam: float) -> int:
@@ -123,11 +127,15 @@ def _online_last(loss: np.ndarray, lam: float) -> int:
         for t in range(1, n):
             d = float(loss[t, 1] - loss[t, 0]) + min(max(d, -lam), lam)
         return 0 if d >= 0 else 1
-    pen = lam * (1.0 - np.eye(k))
-    v = loss[0].copy()
+    # general K: min_j (v_j + lam * [j != i]) = min(v_i, min_j v_j + lam); plain lists beat numpy
+    # on 2x2..4x4 problems by an order of magnitude and give identical numbers
+    rows = loss.tolist()
+    v = rows[0]
     for t in range(1, n):
-        v = loss[t] + (v[:, None] + pen).min(axis=0)
-    return int(v.argmin())
+        m = min(v) + lam
+        row = rows[t]
+        v = [row[i] + (v[i] if v[i] <= m else m) for i in range(k)]
+    return int(np.argmin(v))
 
 
 def _online_all(loss: np.ndarray, lam: float) -> np.ndarray:
@@ -141,12 +149,14 @@ def _online_all(loss: np.ndarray, lam: float) -> np.ndarray:
             d = float(loss[t, 1] - loss[t, 0]) + min(max(d, -lam), lam)
             out[t] = 0 if d >= 0 else 1
         return out
-    pen = lam * (1.0 - np.eye(k))
-    v = loss[0].copy()
-    out[0] = int(v.argmin())
+    rows = loss.tolist()
+    v = rows[0]
+    out[0] = int(np.argmin(v))
     for t in range(1, n):
-        v = loss[t] + (v[:, None] + pen).min(axis=0)
-        out[t] = int(v.argmin())
+        m = min(v) + lam
+        row = rows[t]
+        v = [row[i] + (v[i] if v[i] <= m else m) for i in range(k)]
+        out[t] = int(np.argmin(v))
     return out
 
 
@@ -269,15 +279,23 @@ def jump_labels(features: Any, jump_penalty: float, n_states: int = 2, n_init: i
 
 def jump_states(features: Any, jump_penalty: float, window: int = 1260, refit: str | None = "ME",
                 n_states: int = 2, lookback: int | None = None, n_init: int = 10, random_state: int = 0,
-                clip: float | None = 3.0) -> pd.Series:
+                clip: float | None = 3.0, feature_weights: Any = None) -> pd.Series:
     """Causal online states of a rolling jump model (one Series or a DataFrame of features for
     ONE series). At every refit date the scaler and centres are fitted on the ``window``
     observations before it; the state at *t* is the forward-DP argmin over the ``lookback``
     observations ending at *t* (default: ``window``). ``refit`` is a pandas period alias
     (``"ME"`` monthly, ``"QE"`` quarterly, ``"W"`` weekly) or ``None`` for a single fit. The first
     ``window`` observations are NaN. Labels are ordered by the first feature's centre (0 = lowest).
+    ``feature_weights`` multiply the standardised, clipped features (the reference ``feat_weights``)
+    inside every training and lookback window, so they scale the distances without touching the
+    per-window scaler and without any full-sample statistic.
     """
     _check(n_states, jump_penalty, n_init, clip)
+    w = None
+    if feature_weights is not None:
+        w = np.asarray(feature_weights, dtype=float).ravel()
+        if (w <= 0).any():
+            raise ValueError("feature_weights must be positive")
     if not isinstance(window, (int, np.integer)) or window < 2 * n_states:
         raise ValueError("window must be an integer >= 2 * n_states")
     lookback = window if lookback is None else lookback
@@ -288,6 +306,8 @@ def jump_states(features: Any, jump_penalty: float, window: int = 1260, refit: s
     if window >= n:
         raise AlignmentError(f"window ({window}) must be smaller than the {n} observations")
     X = df.to_numpy(dtype=float)
+    if w is not None and len(w) != X.shape[1]:
+        raise ValueError("feature_weights must match the number of features")
     if refit is None:
         refit_at = [window]
     else:
@@ -301,11 +321,12 @@ def jump_states(features: Any, jump_penalty: float, window: int = 1260, refit: s
         stop = refit_at[j + 1] if j + 1 < len(refit_at) else n
         train = X[start - window:start]
         mu, sd = _scaler(train)
-        centers = _fit(_standardise(train, mu, sd, clip), jump_penalty, n_states, n_init, rng)
+        Zt = _standardise(train, mu, sd, clip)
+        centers = _fit(Zt if w is None else Zt * w, jump_penalty, n_states, n_init, rng)
         for t in range(start, stop):
             lo = max(0, t - lookback + 1)
             Z = _standardise(X[lo:t + 1], mu, sd, clip)
-            out[t] = _online_last(_loss(Z, centers), jump_penalty)
+            out[t] = _online_last(_loss(Z if w is None else Z * w, centers), jump_penalty)
     return pd.Series(out, index=df.index, name="state")
 
 
@@ -408,24 +429,12 @@ def trend_states(returns: Any, basis: str = "raw", rf: Any = None, benchmark: An
 
     def states(c: str) -> pd.Series:
         feat = pd.DataFrame({f: trail[f][c] for f in features}).dropna()
-        if w is not None:  # weights scale the standardised distances: apply after the scaler
-            feat = _weighted_features(feat, w)
-        s = jump_states(feat, jump_penalty, window, refit, 2, lookback, n_init, random_state, None if w is not None else clip)
+        s = jump_states(feat, jump_penalty, window, refit, 2, lookback, n_init, random_state, clip, w)
         on = s.reindex(sig.index)  # state 1 = high slow signal = trend-on
         return on.shift(lag) if lag else on
 
     out = pd.DataFrame({c: states(c) for c in sig.columns})
     return out if p.multi else out.iloc[:, 0]
-
-
-def _weighted_features(feat: pd.DataFrame, w: np.ndarray) -> pd.DataFrame:
-    """Feature weights multiply the *standardised* features (the reference ``feat_weights``); the
-    rolling scaler inside ``jump_states`` re-standardises per window, so weighting is applied to a
-    globally standardised, clipped copy — the per-window scaler then only re-centres."""
-    X = feat.to_numpy(dtype=float)
-    mu, sd = _scaler(X)
-    Z = np.clip((X - mu) / sd, -3.0, 3.0) * w
-    return pd.DataFrame(Z, index=feat.index, columns=feat.columns)
 
 
 # --------------------------------------------------------------------------- conditional tables
@@ -638,10 +647,7 @@ def joint_states(returns: Any, features: tuple[str, ...] = ("logvol", "slow"), n
         for f in features:
             cols[f] = _log_vol(p.returns[c], vol, vol_lambda, vol_window, vol_warmup, p.ppy) if f == "logvol" else trail[f][c]
         feat = pd.DataFrame(cols).dropna()
-        if w is not None:
-            feat = _weighted_features(feat, w)
-        s = jump_states(feat, jump_penalty, window, refit, n_states, lookback, n_init, random_state,
-                        None if w is not None else clip)
+        s = jump_states(feat, jump_penalty, window, refit, n_states, lookback, n_init, random_state, clip, w)
         s = s.reindex(p.returns.index)
         return s.shift(lag) if lag else s
 

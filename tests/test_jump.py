@@ -73,6 +73,26 @@ def test_rolling_states_are_causal(spy):
     assert fullt.loc[:"2024-06-28"].equals(paris.trend_states(spy.loc[:"2024-06-28"], **W))
 
 
+def test_feature_weights_are_causal_and_effective(spy, logvol, inputs):
+    # weights are applied inside every rolling window (no full-sample statistic): truncating the
+    # history must leave earlier labels unchanged, exactly as without weights
+    kw = dict(feature_weights=[1.0, 0.5], **W)
+    full = paris.trend_states(spy, **kw)
+    assert full.loc[:"2024-06-28"].equals(paris.trend_states(spy.loc[:"2024-06-28"], **kw))
+    jw = dict(features=("logvol", "slow", "fast"), feature_weights=[1.0, 1.0, 0.25], **W)
+    fj = paris.joint_states(spy, **jw)
+    assert fj.loc[:"2024-06-28"].equals(paris.joint_states(spy.loc[:"2024-06-28"], **jw))
+    # and they change the answer (a weight of 1 on every feature is the unweighted model)
+    sig = inputs["daily_signals"]
+    base = paris.jump_states(sig, 5.0, **W)
+    assert base.equals(paris.jump_states(sig, 5.0, feature_weights=[1.0, 1.0], **W))
+    assert not base.equals(paris.jump_states(sig, 5.0, feature_weights=[1.0, 0.1], **W))
+    with pytest.raises(ValueError):
+        paris.jump_states(sig, 5.0, feature_weights=[1.0], **W)
+    with pytest.raises(ValueError):
+        paris.jump_states(sig, 5.0, feature_weights=[1.0, -1.0], **W)
+
+
 def test_lag_and_warmup(spy, logvol):
     lag0 = paris.risk_states(spy, lag=0, **W)
     lag1 = paris.risk_states(spy, **W)
