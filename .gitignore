@@ -11,3 +11,4 @@ research/data_cache/
 research/frozen_rule_benchmark/*_exposures.csv
 research/calibration_memory/*_exposures.csv
 research/sizing_estimator/*_exposures.csv
+research/momentum_cycle_timing/*_exposures.csv

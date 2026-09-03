@@ -1,0 +1,21 @@
+{
+  "title": "External conditions on the trend switch: variance ratio VR(5,63) and the VIX term structure",
+  "status": "FROZEN 2026-09-03 before any run",
+  "reference_switch": "trend λ5 rolling 1260 (incumbent); if momentum_cycle_timing promotes another switch the test is re-run against it and both runs are kept",
+  "conditions": {
+    "VR own": "Lo-MacKinlay VR(5,63) on the fund's own log returns exactly as the screener defines it: Var(5-day log return)/(5 x Var(1-day)), both over a trailing 63-bar window, then a 200-bar simple MA (~267-bar warm-up); condition = VR_MA >= 1 (trend-friendly). No tuning: the neutral value 1 is the threshold.",
+    "VR SPY": "the same statistic on SPY, broadcast to every fund (market-level trendiness)",
+    "VIX term": "VIX3M - VIX (CBOE, via FMP; VIX3M from 2006-07) >= 0 (contango = not stressed); inversion (< 0) switches off. No tuning.",
+    "VIX9D not used": "starts 2011; too short for the folds"
+  },
+  "arms": ["Buy & hold", "trend λ5 rolling (reference)", "trend x VR own", "trend x VR SPY", "trend x VIX term", "VR own alone (on B&H)", "VR SPY alone", "VIX term alone"],
+  "alignment": "every condition is evaluated at close T-1 and gates day T; SPY/VIX series aligned to each fund's calendar by causal forward-fill",
+  "universe": ["SPY", "QQQ", "XLK", "IWM", "EFA", "EEM", "TLT", "GLD"],
+  "execution_and_folds": "identical to frozen_rule_benchmark; VIX arms' OOS starts at the later of the trend warm-up and 2006-07 + 1 day",
+  "decision_rule": {
+    "PROMOTE_condition": "vs the reference switch: median ΔMartin > 0 with CI excluding 0, OR wins >= 6/8 with median ΔSharpe >= 0; AND bull-fold bleed not worse than the reference by > 0.10 in any bull fold",
+    "RETIRE": "otherwise",
+    "note": "a condition can only remove exposure, so it must earn its keep in the bear folds without bleeding in the bull folds; MaxDD is reported with the 50% participation floor, not gated"
+  },
+  "prior": "VR: about 1 in 5 (267-bar warm-up makes it very slow; it is an IBS precondition, not a timing signal); VIX term: about 1 in 4 (program's monthly VIX tests found variance content, zero mean content; a daily switch condition is a different claim)"
+}

@@ -1,0 +1,25 @@
+{
+  "title": "The four-state momentum cycle (Goulding-Harvey-Mazzoleni) as a long/flat timing rule vs the jump-model trend switch",
+  "status": "FROZEN 2026-09-03 before any run",
+  "states": "daily classification from paris.momentum_states: SLOW = trailing 252-day arithmetic mean return, FAST = 21-day; Bull (+,+), Bear (-,-), Correction (+,-), Rebound (-,+); state at close T-1 sets exposure for day T",
+  "long_only_mapping": "the paper's position w in [-1,1] is mapped to exposure e = (w+1)/2 in [0,1]: Bull 1, Bear 0, Correction 1-a_Co, Rebound a_Re",
+  "arms": {
+    "DYN (primary)": "Proposition 9 dynamic speeds a_Co, a_Re estimated by paris.dynamic_speeds on the expanding history up to each year-end (first estimate after 5 years of states), applied through the following year; NaN speeds fall back to 0.5",
+    "MED (static)": "equation 11 with a = 0.5 for both Correction and Rebound (exposure 0.5 in both)",
+    "Bull+Rebound": "long only when FAST >= 0 (Bull, Rebound); flat in Correction and Bear",
+    "OutOnlyBear": "long in Bull, Correction, Rebound; flat only in Bear",
+    "SlowSign": "long when SLOW >= 0 (Bull, Correction) — the pure 12-month rule trend λ5 was calibrated against",
+    "references": ["Buy & hold", "trend λ5 rolling 1260 (incumbent switch)"]
+  },
+  "universe": ["SPY", "QQQ", "XLK", "IWM", "EFA", "EEM", "TLT", "GLD"],
+  "execution": "as frozen_rule_benchmark: 10 bp one-way, T-bill cash, exposure for T from close T-1; OOS from the first date every arm is valid (trend warm-up 1,260 + DYN 5-year speed warm-up)",
+  "folds": "identical to frozen_rule_benchmark/preregistration.json",
+  "metrics_primary": ["Martin (paired vs trend λ5, 1,000-draw bootstrap CI)", "Sharpe"],
+  "metrics_reported": ["MaxDD (participation floor 50%)", "CAGR", "time in", "flips/yr", "bull-fold bleed vs B&H"],
+  "decision_rule": {
+    "PROMOTE_over_trend": "median ΔMartin vs trend λ5 > 0 with CI excluding 0, OR wins >= 6/8 with median ΔSharpe >= 0; AND bleed not worse than trend by > 0.10 in any bull fold",
+    "RETIRE": "otherwise",
+    "also_reported": "each arm vs Buy & hold; per-fund four-state conditional tables (paris.momentum_state_table) to show information content beside rule performance"
+  },
+  "prior": "DYN and MED: about 1 in 4 to beat trend λ5 on Martin (they flip with the raw signs; the jump penalty was introduced precisely to suppress that); discrete arms: below 1 in 5"
+}
