@@ -634,6 +634,22 @@ _add(
     },
 )
 
+# ----------------------------------------------------------------------------- regimes (0.7.0)
+_add(
+    "momentum_conditional_table",
+    {
+        "default": ((FUNDS,), {}),
+        "series": ((SPX,), {}),
+        "benchmark": ((FUNDS, SPX), {}),
+        "benchmark_rf_series": ((FUNDS, SPX), {"rf": RF}),
+        "rf_scalar": ((FCNTX,), {"rf": 0.02}),
+        "relative_default_spx": ((FUNDS,), {"basis": "relative"}),
+        "excess_rf_series": ((FCNTX,), {"basis": "excess", "rf": RF}),
+        "daily": ((DAILY,), {}),
+    },
+)
+_add("regime_runs", {"series": ((In("states_fcntx"),), {}), "frame": ((In("states_funds"),), {})})
+
 _ids = [c.id for c in CASES]
 assert len(_ids) == len(set(_ids)), "duplicate case ids"
 BY_MODULE: dict[str, list[Case]] = {}

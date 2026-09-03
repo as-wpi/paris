@@ -5,6 +5,15 @@ All notable changes to PARIS are recorded here, one section per release. Version
 are never changed silently: a change to a default convention is a breaking change and is listed
 under **Changed**.
 
+## 0.7.0 — Unreleased — Jump-model risk-on/off and trend-on/off indicators (fork: as-wpi/paris)
+
+### Added
+- `momentum_conditional_table`: by momentum state at *t*, the annualised arithmetic mean of the
+  return at *t+1* of the fund, the benchmark and the active return (and the excess versions with
+  `rf`) side by side.
+- `regime_runs`: contiguous runs (`start`, `end`, `state`, `length`) of any label series — the
+  input to a colour-coded regime ribbon; README shows the matplotlib recipe.
+
 ## 0.6.0 — 2026-09-02 — Regimes, drawdown distributions, Kelly and deflated Sharpe (fork: as-wpi/paris)
 
 ### Added

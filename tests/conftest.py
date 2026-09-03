@@ -44,6 +44,8 @@ def build_inputs() -> dict[str, Any]:
         "sleeves": sleeves,
         "style": style,
         "contrib": paris.contribution(funds, W6),
+        "states_fcntx": paris.momentum_states(m["FCNTX"]),
+        "states_funds": paris.momentum_states(funds),
     }
 
 

@@ -188,3 +188,22 @@ def test_history_shorter_than_the_slow_window_is_an_alignment_error(fcntx):
     with pytest.raises(AlignmentError):
         paris.momentum_states(fcntx.iloc[:10])
     assert paris.momentum_states(fcntx.iloc[:12]).notna().sum() == 1
+
+
+# ------------------------------------------------------------------ 0.7.0 additions
+def test_regime_runs_and_conditional_table(fcntx, funds, spx, rf_series):
+    s = paris.momentum_states(fcntx)
+    runs = paris.regime_runs(s)
+    assert runs["length"].sum() == s.notna().sum()
+    assert (runs["state"].to_numpy()[1:] != runs["state"].to_numpy()[:-1]).all()
+    assert runs.iloc[0]["start"] == s.dropna().index[0] and runs.iloc[-1]["end"] == s.index[-1]
+    t = paris.momentum_conditional_table(fcntx)
+    np.testing.assert_allclose(t["own mean (ann.)"], paris.momentum_state_table(fcntx)["mean (ann.)"])
+    tb = paris.momentum_conditional_table(fcntx, benchmark=spx, rf=rf_series)
+    for col in ("own", "benchmark", "active", "own excess", "benchmark excess"):
+        assert f"{col} mean (ann.)" in tb.columns
+    np.testing.assert_allclose(tb["active mean (ann.)"], tb["own mean (ann.)"] - tb["benchmark mean (ann.)"])
+    rel = paris.momentum_conditional_table(fcntx, basis="relative")
+    np.testing.assert_allclose(rel["active mean (ann.)"], paris.momentum_state_table(fcntx, basis="relative")["mean (ann.)"])
+    long = paris.momentum_conditional_table(funds, benchmark=spx)
+    assert list(long.columns)[:2] == ["fund", "state"] and len(long) == 24

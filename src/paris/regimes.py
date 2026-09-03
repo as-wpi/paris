@@ -41,6 +41,7 @@ from paris._core import AlignmentError, Prepared, prepare, resolve_periods, to_s
 
 __all__ = [
     "dynamic_speeds",
+    "momentum_conditional_table",
     "momentum_signal",
     "momentum_speed_weights",
     "momentum_state",
@@ -48,6 +49,7 @@ __all__ = [
     "momentum_state_table",
     "momentum_states",
     "momentum_transitions",
+    "regime_runs",
 ]
 
 STATES: tuple[str, ...] = ("Bull", "Correction", "Bear", "Rebound")
@@ -271,6 +273,82 @@ def momentum_transitions(returns: Any, basis: str = "raw", rf: Any = None, bench
     a leading ``fund`` column."""
     p, _, states = _states_frame(returns, basis, rf, benchmark, periods_per_year, slow, fast, compound)
     return _long({c: _transitions(states[c]) for c in states.columns}, p.multi)
+
+
+def momentum_conditional_table(returns: Any, benchmark: Any = None, rf: Any = None, basis: str = "raw",
+                               periods_per_year: int | None = None, slow: int | None = None,
+                               fast: int | None = None, compound: bool = False) -> pd.DataFrame:
+    """By state at *t*: count, frequency and the annualised arithmetic mean of the return at *t+1*
+    of the fund (``own``), of the benchmark and of the active return (fund minus benchmark) when a
+    benchmark is given or ``basis="relative"`` (bundled S&P 500 proxy by default), and of the excess
+    returns when ``rf`` is given. The states follow ``basis`` exactly as :func:`momentum_states`.
+    Rows = states; a DataFrame input gives one long table with a leading ``fund`` column."""
+    p, sig, states = _states_frame(returns, basis, rf, benchmark, periods_per_year, slow, fast, compound)
+    bench = p.benchmark
+    if bench is None and benchmark is not None:
+        bench = prepare(returns, benchmark=benchmark, periods_per_year=periods_per_year).benchmark
+    rf_s = p.rf if (rf is not None or basis == "excess") else None
+
+    def table(c: str) -> pd.DataFrame:
+        s = states[c]
+        cols = {"own": p.returns[c]}
+        if bench is not None:
+            b = bench.reindex(s.index)
+            cols["benchmark"] = b
+            cols["active"] = p.returns[c] - b
+        if rf_s is not None:
+            r = rf_s.reindex(s.index)
+            cols["own excess"] = p.returns[c] - r
+            if bench is not None:
+                cols["benchmark excess"] = cols["benchmark"] - r
+        rows = {}
+        for st in STATES:
+            m = (s.iloc[:-1] == st).to_numpy()
+            row = {"count": float(m.sum()), "frequency": m.sum() / s.iloc[:-1].notna().sum()
+                   if s.iloc[:-1].notna().any() else float("nan")}
+            for name, x in cols.items():
+                nxt = x.iloc[1:].to_numpy()[m]
+                row[f"{name} mean (ann.)"] = float(np.nanmean(nxt) * p.ppy) if len(nxt) and not np.all(np.isnan(nxt)) else float("nan")
+            rows[st] = row
+        out = pd.DataFrame(rows).T.reindex(list(STATES))
+        out.index.name = "state"
+        return out
+
+    return _long({c: table(c) for c in states.columns}, p.multi)
+
+
+def regime_runs(states: Any) -> pd.DataFrame:
+    """Contiguous runs of a label series (the output of :func:`momentum_states`,
+    :func:`paris.risk_states` or :func:`paris.trend_states`): ``start``, ``end``, ``state``,
+    ``length`` (observations), NaN stretches skipped. A DataFrame input gives one long table with a
+    leading ``fund`` column. This is the input to any colour-coded regime ribbon (one span per row).
+    """
+    df = states.to_frame() if isinstance(states, pd.Series) else states
+    if not isinstance(df, pd.DataFrame):
+        raise ValueError("states must be a Series or DataFrame of labels")
+
+    def runs(s: pd.Series) -> pd.DataFrame:
+        s = s.dropna()
+        rows = []
+        if len(s):
+            vals = s.to_numpy(dtype=object)
+            start = 0
+            for i in range(1, len(vals) + 1):
+                if i == len(vals) or vals[i] != vals[start]:
+                    rows.append({"start": s.index[start], "end": s.index[i - 1], "state": vals[start],
+                                 "length": i - start})
+                    start = i
+        return pd.DataFrame(rows, columns=["start", "end", "state", "length"])
+
+    tables = {c: runs(df[c]) for c in df.columns}
+    if df.shape[1] == 1 and isinstance(states, pd.Series):
+        return next(iter(tables.values()))
+    parts = []
+    for name, t in tables.items():
+        t = t.copy()
+        t.insert(0, "fund", name)
+        parts.append(t)
+    return pd.concat(parts, ignore_index=True)
 
 
 # --------------------------------------------------------------------------- speed strategies
