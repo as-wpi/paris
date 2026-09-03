@@ -5,7 +5,7 @@ All notable changes to PARIS are recorded here, one section per release. Version
 are never changed silently: a change to a default convention is a breaking change and is listed
 under **Changed**.
 
-## 0.7.0 — Unreleased — Jump-model risk-on/off and trend-on/off indicators (fork: as-wpi/paris)
+## 0.7.0 — 2026-09-02 — Jump-model risk-on/off and trend-on/off indicators (fork: as-wpi/paris)
 
 ### Added
 - `jump`: a pure numpy statistical jump model (Nystrup, Lindström & Madsen 2020) with the loss and

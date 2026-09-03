@@ -55,6 +55,28 @@ paris.momentum_state(funds, basis="excess", rf=rf)          # latest state on ex
 paris.momentum_state(funds, basis="relative")               # ... relative to the bundled S&P 500 proxy (or benchmark=)
 paris.momentum_state_table(spx), paris.momentum_transitions(spx)  # subsequent-return moments by state; transition matrix
 paris.momentum_speed_weights(spx, speeds=paris.dynamic_speeds(spx.loc[:"2017"]))  # state-dependent momentum positions
+paris.momentum_conditional_table(funds, spx, rf=rf)  # by state: next-period mean of own, benchmark, active and excess returns
+
+d = paris.data.load_prices().pct_change().dropna()  # daily returns
+paris.risk_states(d["SPY"], window=252)             # 1 risk-on / 0 risk-off: rolling jump model on EWMA log-vol, known at T-1
+paris.risk_state_table(d["FCNTX"], basis="benchmark", window=252)   # mean/vol by market risk state, fund and S&P 500
+paris.trend_states(d, window=252)                   # 1 trend-on / 0 trend-off: jump model on the slow/fast momentum signals
+paris.regime_runs(paris.momentum_states(d["SPY"]))  # contiguous spans (start, end, state, length) for a colour-coded ribbon
+```
+
+A colour-coded regime ribbon from `regime_runs` (matplotlib; one `axvspan` per run):
+
+```python
+import matplotlib.pyplot as plt
+colors = {"Bull": "#16a34a", "Correction": "#d97706", "Bear": "#dc2626", "Rebound": "#0072B2"}
+runs = paris.regime_runs(paris.momentum_states(d["SPY"]))
+fig, ax = plt.subplots(figsize=(11, 3))
+ax.plot(paris.wealth_index(d["SPY"]), color="black", lw=1)
+for _, r in runs.iterrows():
+    ax.axvspan(r["start"], r["end"], color=colors[r["state"]], alpha=0.25, lw=0)
+```
+
+```python
 ```
 
 Inputs: pandas Series/DataFrame with a DatetimeIndex (daily, weekly, monthly, quarterly, yearly —
@@ -96,7 +118,8 @@ vendor-specific ships.
 | `tables.py` | capture, downside, distribution, annualised-returns, calendar (month grid + annual), drawdown summary and ratio tables, `rolling(fn, window)` — every cell is a call to a topic-module function (imports the topic modules) |
 | `attribution.py` | weights → portfolio return with drift / rebalancing, per-period contributions, BOP/EOP weights, linked multi-period contributions, active contribution, Brinson attribution (BF/BHB; Carino, Menchero or arithmetic linking) |
 | `budgeting.py` | Euler contributions to volatility, VaR (Gaussian, Cornish-Fisher) and CVaR (historical, Gaussian, Cornish-Fisher) for one weight vector; marginal VaR / CVaR |
-| `regimes.py` | Goulding–Harvey–Mazzoleni (2023) momentum turning points: slow/fast signals, Bull / Correction / Bear / Rebound state series on a raw, excess-of-rf or benchmark-relative basis (S&P 500 default), latest state and its age, conditional subsequent-return table, transition matrix, intermediate-speed strategy weights and the Sharpe-maximising dynamic speeds (imports `paris.data` lazily for the default benchmark) |
+| `regimes.py` | Goulding–Harvey–Mazzoleni (2023) momentum turning points: slow/fast signals, Bull / Correction / Bear / Rebound state series on a raw, excess-of-rf or benchmark-relative basis (S&P 500 default), latest state and its age, conditional subsequent-return tables (own / benchmark / active, excess), transition matrix, regime run table, intermediate-speed strategy weights and the Sharpe-maximising dynamic speeds (imports `paris.data` lazily for the default benchmark) |
+| `jump.py` | statistical jump model (pure numpy, checked exactly against `jumpmodels`): hindsight labels, causal rolling-calibration / online-inference states, and the two binary indicators — risk-on/off on log volatility (own or S&P 500 basis) and trend-on/off on the slow/fast momentum signals — with conditional return tables (imports `regimes`) |
 | `summary.py` / `portfolio.py` | `stats()` table and the `Portfolio` convenience wrapper (these two import all topic modules) |
 
 Defaults follow the industry-standard R reference package; every convention that differs between

@@ -141,5 +141,5 @@ def test_top_level_exports():
         "marginal_var",
     ):
         assert name in paris.__all__ and callable(getattr(paris, name))
-    assert paris.__version__ == "0.6.0"
+    assert paris.__version__ == "0.7.0"
     assert paris.data.__all__ == ["describe", "load_managers", "load_prices"]
