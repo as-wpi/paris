@@ -15,6 +15,8 @@ Pre-registration: `preregistration.json`. Gate = trend λ5 on the 1x, calibratio
 | E2 Parkinson EWMA | trend | 10.1% | 6.4% | 0.40 | 0.58 | -18.2% | 5.2% | 2.0 | 0.50 |
 | E3 K-ATR fast | none | 12.1% | 2.6% | 0.33 | 0.38 | -35.3% | 5.1% | 8.9 | 0.77 |
 | E3 K-ATR fast | trend | 9.8% | 6.1% | 0.33 | 0.43 | -17.9% | 4.3% | 6.3 | 0.50 |
+| E4 Yang-Zhang EWMA | none | 10.1% | 1.7% | 0.41 | 0.53 | -26.3% | 5.5% | 1.6 | 0.61 |
+| E4 Yang-Zhang EWMA | trend | 7.7% | 5.8% | 0.38 | 0.56 | -14.7% | 4.2% | 2.0 | 0.40 |
 
 ### Decision rule, P1 1x (paired vs E0)
 
@@ -23,6 +25,8 @@ Pre-registration: `preregistration.json`. Gate = trend λ5 on the 1x, calibratio
 **E2 Parkinson EWMA: RETIRE** — ΔTrackRMSE +2.03% (CI [+1.19%, +3.50%]), better 0/8; ΔSharpe (gated) -0.02 (CI [-0.04, -0.02]); ΔMartin +0.02; turnover ×0.90.
 
 **E3 K-ATR fast: RETIRE** — ΔTrackRMSE +1.30% (CI [+0.87%, +2.39%]), better 0/8; ΔSharpe (gated) +0.01 (CI [-0.03, +0.04]); ΔMartin +0.07; turnover ×3.03.
+
+**E4 Yang-Zhang EWMA: RETIRE** — ΔTrackRMSE +0.20% (CI [+0.18%, +0.32%]), better 0/8; ΔSharpe (gated) -0.01 (CI [-0.04, +0.02]); ΔMartin -0.00; turnover ×0.87.
 
 
 ## P2 3x (target 30%; cross-vehicle medians)
@@ -37,6 +41,8 @@ Pre-registration: `preregistration.json`. Gate = trend λ5 on the 1x, calibratio
 | E2 Parkinson EWMA | trend | 28.7% | 18.9% | 0.43 | 0.51 | -47.1% | 9.5% | 2.2 | 0.52 |
 | E3 K-ATR fast | none | 35.9% | 7.7% | 0.43 | 0.37 | -63.5% | 10.9% | 8.9 | 0.76 |
 | E3 K-ATR fast | trend | 27.3% | 18.3% | 0.37 | 0.38 | -40.1% | 7.8% | 5.8 | 0.51 |
+| E4 Yang-Zhang EWMA | none | 30.1% | 5.2% | 0.43 | 0.45 | -51.5% | 10.4% | 2.3 | 0.59 |
+| E4 Yang-Zhang EWMA | trend | 23.5% | 17.6% | 0.42 | 0.54 | -37.2% | 8.4% | 2.6 | 0.43 |
 
 ### Decision rule, P2 3x (paired vs E0)
 
@@ -46,11 +52,5 @@ Pre-registration: `preregistration.json`. Gate = trend λ5 on the 1x, calibratio
 
 **E3 K-ATR fast: RETIRE** — ΔTrackRMSE +2.93% (CI [+1.68%, +4.39%]), better 0/7; ΔSharpe (gated) +0.00 (CI [-0.07, +0.04]); ΔMartin +0.03; turnover ×2.33.
 
+**E4 Yang-Zhang EWMA: RETIRE** — ΔTrackRMSE +0.70% (CI [+0.49%, +0.74%]), better 0/7; ΔSharpe (gated) -0.01 (CI [-0.01, +0.00]); ΔMartin +0.01; turnover ×0.86.
 
-## Reading (written after the run; rule frozen before it)
-
-**All three range-based estimators RETIRE, 0/8 and 0/7 on tracking.** The incumbent EWMA of close-to-close returns is the best tracker on every vehicle in both panels: rolling-63 RMSE around target 1.4% (1x) and 4.5% (3x) against 1.6% / 4.8% for Yang–Zhang, 3.3% / 9.2% for Parkinson, 2.6% / 7.7% for the K-ATR arm. Sharpe and Martin are a wash everywhere (|ΔSharpe| ≤ 0.03), so nothing was lost by the incumbent either.
-
-**Why the literature efficiency did not show up.** (i) Yang–Zhang is unbiased and nearly matches EWMA, but a 21-day flat window is a worse temporal filter for a control loop than an exponential one with ~33 effective days — the estimator was better, the window was worse, and the loop only sees the product. (ii) Parkinson is biased low under discrete sampling (the intraday high and low understate the continuous extremes), so the loop over-levers: realised vol 12.5% against a 10% target on the 1x panel, 36.8% against 30% on the 3x. (iii) The K-ATR arm inherits a conversion constant (E[H−L] = 1.596σ) that is only right for a driftless diffusion without gaps, and the fast LLT reacts in 5–10 bars, which triples turnover (×3.0 / ×2.3) for no tracking gain. A range estimator is a better *daily* measurement; the vol-target needs a better *filtered* one, and the RiskMetrics filter is already good at that.
-
-**Disposition.** EWMA λ=0.94 stays the sizing estimator; this is the third head-to-head it has won (EGARCH 2026-08-31, GJR term structure, now three range estimators). Range-based volatility is closed as a sizing input on this evidence. An EWMA-weighted Yang–Zhang (same filter, better daily measurement) is the one untested combination that the reading above predicts could match or edge the incumbent; it is a small spec, not run here.

@@ -75,7 +75,24 @@ def e3_katr(px: pd.DataFrame) -> pd.Series:
     return out
 
 
-ESTIMATORS = {"E0 EWMA c2c": e0_ewma, "E1 Yang-Zhang 21": e1_yang_zhang, "E2 Parkinson EWMA": e2_parkinson, "E3 K-ATR fast": e3_katr}
+def e4_yz_ewma(px: pd.DataFrame, n: int = 21) -> pd.Series:
+    """Yang-Zhang components with the incumbent's exponential filter (amendment E4)."""
+    o = np.log(px["O"] / px["C"].shift(1))
+    c = np.log(px["C"] / px["O"])
+    u = np.log(px["H"] / px["O"])
+    d = np.log(px["L"] / px["O"])
+    k = 0.34 / (1.34 + (n + 1) / (n - 1))
+    ew = lambda x: x.ewm(alpha=1 - LAM, adjust=False).mean()  # noqa: E731
+    vo = ew(o**2) - ew(o) ** 2
+    vc = ew(c**2) - ew(c) ** 2
+    rs = ew(u * (u - c) + d * (d - c))
+    v = (vo + k * vc + (1 - k) * rs).clip(lower=0)
+    v.iloc[:WARM] = np.nan
+    return np.sqrt(v * 252)
+
+
+ESTIMATORS = {"E0 EWMA c2c": e0_ewma, "E1 Yang-Zhang 21": e1_yang_zhang, "E2 Parkinson EWMA": e2_parkinson, "E3 K-ATR fast": e3_katr,
+              "E4 Yang-Zhang EWMA": e4_yz_ewma}
 
 
 # ---------------------------------------------------------------- vol-target loop (§14.1 construction)
@@ -183,7 +200,7 @@ def main() -> None:
             v = "ADOPT" if adopt else ("RETIRE — measurement better, sizing worse" if twins >= nmin else "RETIRE")
             verdict[f"{pname} {est}"] = v
             L.append(f"**{est}: {v}** — ΔTrackRMSE {dt:+.2%} (CI [{tlo:+.2%}, {thi:+.2%}]), better {twins}/{n}; ΔSharpe (gated) {ds:+.2f} (CI [{slo:+.2f}, {shi:+.2f}]); ΔMartin {-dm:+.2f}; turnover ×{turn_ratio:.2f}.\n")
-    (OUT / "RESULTS.md").write_text("\n".join(L) + "\n")
+    (OUT / "RESULTS.md").write_text("\n".join(L) + "\n")  # tables only; readings live in READING.md
     (OUT / "verdict.json").write_text(json.dumps(verdict, indent=2))
     print("\n".join(L))
 
