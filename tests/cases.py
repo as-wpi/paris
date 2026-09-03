@@ -761,6 +761,54 @@ _add(
     },
 )
 
+# ----------------------------------------------------------------------------- 0.9.0: tables, signals, centres, sizing
+_add("risk_state_table", {"rf_scalar": ((DSPX,), {"rf": 0.02, "window": 252}),
+                          "benchmark_rf": ((DFC,), {"basis": "benchmark", "rf": 0.02, "window": 252})})
+_add("trend_state_table", {"rf_scalar": ((DSPX,), {"rf": 0.02, "window": 252})})
+_add(
+    "state_table",
+    {
+        "risk_series": ((DSPX, In("risk_spx")), {}),
+        "risk_frame": ((DAILY, In("risk_daily")), {}),
+        "broadcast_benchmark": ((DAILY, In("risk_spx")), {"benchmark": DSPX}),
+        "labels_rf": ((DSPX, In("trend_spx")), {"labels": {0.0: "off", 1.0: "on"}, "rf": 0.02}),
+        "momentum_shift1": ((FCNTX, In("states_fcntx")), {"shift": 1, "benchmark": SPX, "rf": RF}),
+    },
+)
+_add(
+    "state_transitions",
+    {
+        "risk": ((In("risk_spx"),), {}),
+        "trend_frame": ((In("trend_daily"),), {}),
+        "momentum_ordered": ((In("states_fcntx"),), {"order": ["Bull", "Correction", "Bear", "Rebound"]}),
+    },
+)
+_add("risk_signal", {"default": ((DAILY,), {}), "log_series": ((DSPX,), {"log": True}), "rolling": ((DSPX,), {"vol": "rolling"})})
+_add("trend_signal", {"default": ((DAILY,), {}), "fast_relative": ((DFC,), {"signal": "fast", "basis": "relative"})})
+_add(
+    "jump_centers",
+    {
+        "default": ((LOGVOL, 20.0), W),
+        "two_features_weights": ((SIGNALS, 20.0), {"window": 252, "feature_weights": [1.0, 0.5]}),
+        "three_states": ((LOGVOL, 20.0), {"window": 252, "n_states": 3}),
+        "single_fit": ((LOGVOL, 20.0), {"window": 252, "refit": None}),
+    },
+)
+_add("risk_centers", {"default": ((DSPX,), W), "log_frame": ((DAILY,), {"log": True, "window": 252}), "quarterly": ((DSPX,), {"window": 252, "refit": "QE"})})
+_add("trend_centers", {"default": ((DSPX,), W), "slow_only_frame": ((DAILY,), {"features": ("slow",), "window": 252}),
+                       "relative_weights": ((DFC,), {"basis": "relative", "feature_weights": [1.0, 0.5], "window": 252})})
+_add(
+    "state_sizing",
+    {
+        "default": ((DSPX, In("risk_spx")), {}),
+        "quarterly_rf": ((DSPX, In("trend_spx")), {"refit": "QE", "rf": 0.02}),
+        "rolling_window": ((DSPX, In("trend_spx")), {"refit": "QE", "window": 252}),
+        "frame": ((DAILY, In("trend_daily")), {"refit": "QE"}),
+        "table": ((DSPX, In("trend_spx")), {"refit": "QE", "table": True}),
+        "single_estimate": ((DSPX, In("risk_spx")), {"refit": None}),
+    },
+)
+
 _ids = [c.id for c in CASES]
 assert len(_ids) == len(set(_ids)), "duplicate case ids"
 BY_MODULE: dict[str, list[Case]] = {}

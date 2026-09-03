@@ -39,17 +39,25 @@ import numpy as np
 import pandas as pd
 
 from paris._core import AlignmentError, align, prepare, resolve_periods, to_frame
-from paris.regimes import _lookbacks, _signal_frame, _trailing
+from paris.regimes import (_conditional_table, _lookbacks, _signal_frame, _trailing, _transition_table,
+                           momentum_signal)
 
 __all__ = [
     "combine_states",
     "joint_state_table",
     "joint_states",
+    "jump_centers",
     "jump_labels",
     "jump_states",
+    "risk_centers",
+    "risk_signal",
     "risk_state_table",
     "risk_states",
+    "state_sizing",
     "state_table",
+    "state_transitions",
+    "trend_centers",
+    "trend_signal",
     "trend_state_table",
     "trend_states",
 ]
@@ -277,19 +285,11 @@ def jump_labels(features: Any, jump_penalty: float, n_states: int = 2, n_init: i
     return pd.Series(labels, index=df.index, name="state")
 
 
-def jump_states(features: Any, jump_penalty: float, window: int = 1260, refit: str | None = "ME",
-                n_states: int = 2, lookback: int | None = None, n_init: int = 10, random_state: int = 0,
-                clip: float | None = 3.0, feature_weights: Any = None) -> pd.Series:
-    """Causal online states of a rolling jump model (one Series or a DataFrame of features for
-    ONE series). At every refit date the scaler and centres are fitted on the ``window``
-    observations before it; the state at *t* is the forward-DP argmin over the ``lookback``
-    observations ending at *t* (default: ``window``). ``refit`` is a pandas period alias
-    (``"ME"`` monthly, ``"QE"`` quarterly, ``"W"`` weekly) or ``None`` for a single fit. The first
-    ``window`` observations are NaN. Labels are ordered by the first feature's centre (0 = lowest).
-    ``feature_weights`` multiply the standardised, clipped features (the reference ``feat_weights``)
-    inside every training and lookback window, so they scale the distances without touching the
-    per-window scaler and without any full-sample statistic.
-    """
+def _rolling_fits(features, jump_penalty, window, refit, n_states, lookback, n_init, random_state, clip,
+                  feature_weights):
+    """Validate the inputs and fit the model at every refit date on the ``window`` observations
+    before it. Returns ``(frame, X, weights, lookback, [(start, mu, sd, centres), ...])``; the
+    centres are in standardised (and weighted) units, ordered by the first feature."""
     _check(n_states, jump_penalty, n_init, clip)
     w = None
     if feature_weights is not None:
@@ -316,13 +316,58 @@ def jump_states(features: Any, jump_penalty: float, window: int = 1260, refit: s
         per = _periods(df.index, refit)
         refit_at = [window] + [i for i in range(window + 1, n) if per[i] != per[i - 1]]
     rng = np.random.default_rng(random_state)
-    out = np.full(n, np.nan)
-    for j, start in enumerate(refit_at):
-        stop = refit_at[j + 1] if j + 1 < len(refit_at) else n
+    fits = []
+    for start in refit_at:
         train = X[start - window:start]
         mu, sd = _scaler(train)
         Zt = _standardise(train, mu, sd, clip)
-        centers = _fit(Zt if w is None else Zt * w, jump_penalty, n_states, n_init, rng)
+        fits.append((start, mu, sd, _fit(Zt if w is None else Zt * w, jump_penalty, n_states, n_init, rng)))
+    return df, X, w, int(lookback), fits
+
+
+def jump_centers(features: Any, jump_penalty: float, window: int = 1260, refit: str | None = "ME",
+                 n_states: int = 2, n_init: int = 10, random_state: int = 0, clip: float | None = 3.0,
+                 feature_weights: Any = None) -> pd.DataFrame:
+    """What the rolling model fitted: one row per refit date (the first date the fit applies to)
+    with the cluster centres in the **original feature units** (``state<k> <feature>`` columns,
+    states ordered by the first feature) and, for a one-feature two-state model, ``threshold``: the
+    midpoint of the two centres, the zero-penalty switching level (the jump penalty moves the
+    effective switch beyond it by an amount that grows with the penalty). Same arguments and
+    calibration as :func:`jump_states`."""
+    df, X, w, _, fits = _rolling_fits(features, jump_penalty, window, refit, n_states, None, n_init,
+                                      random_state, clip, feature_weights)
+    rows = {}
+    for start, mu, sd, centers in fits:
+        c = centers / w if w is not None else centers
+        orig = c * sd + mu  # (K, p) in original units
+        row = {f"state{k} {f}": float(orig[k, i]) for k in range(n_states) for i, f in enumerate(df.columns)}
+        if n_states == 2 and X.shape[1] == 1:
+            row["threshold"] = float(orig[:, 0].mean())
+        rows[df.index[start]] = row
+    out = pd.DataFrame(rows).T
+    out.index.name = "refit"
+    return out
+
+
+def jump_states(features: Any, jump_penalty: float, window: int = 1260, refit: str | None = "ME",
+                n_states: int = 2, lookback: int | None = None, n_init: int = 10, random_state: int = 0,
+                clip: float | None = 3.0, feature_weights: Any = None) -> pd.Series:
+    """Causal online states of a rolling jump model (one Series or a DataFrame of features for
+    ONE series). At every refit date the scaler and centres are fitted on the ``window``
+    observations before it; the state at *t* is the forward-DP argmin over the ``lookback``
+    observations ending at *t* (default: ``window``). ``refit`` is a pandas period alias
+    (``"ME"`` monthly, ``"QE"`` quarterly, ``"W"`` weekly) or ``None`` for a single fit. The first
+    ``window`` observations are NaN. Labels are ordered by the first feature's centre (0 = lowest).
+    ``feature_weights`` multiply the standardised, clipped features (the reference ``feat_weights``)
+    inside every training and lookback window, so they scale the distances without touching the
+    per-window scaler and without any full-sample statistic.
+    """
+    df, X, w, lookback, fits = _rolling_fits(features, jump_penalty, window, refit, n_states, lookback, n_init,
+                                             random_state, clip, feature_weights)
+    n = len(df)
+    out = np.full(n, np.nan)
+    for j, (start, mu, sd, centers) in enumerate(fits):
+        stop = fits[j + 1][0] if j + 1 < len(fits) else n
         for t in range(start, stop):
             lo = max(0, t - lookback + 1)
             Z = _standardise(X[lo:t + 1], mu, sd, clip)
@@ -395,6 +440,77 @@ def risk_states(returns: Any, basis: str = "own", benchmark: Any = None, vol: st
     return out if p.multi else out.iloc[:, 0]
 
 
+def risk_signal(returns: Any, vol: str = "ewma", vol_lambda: float = 0.94, vol_window: int = 63,
+                vol_warmup: int = 60, periods_per_year: int | None = None, log: bool = False) -> Any:
+    """The volatility series :func:`risk_states` classifies: annualised EWMA (RiskMetrics,
+    ``vol_lambda``) or rolling (``vol_window``) volatility of daily log returns, NaN through
+    ``vol_warmup``; ``log=True`` returns its natural log, the model's actual feature. Series in,
+    Series out; DataFrame in, one column per fund."""
+    p = prepare(returns, periods_per_year=periods_per_year)
+    out = pd.DataFrame({c: _log_vol(p.returns[c], vol, vol_lambda, vol_window, vol_warmup, p.ppy) for c in p.returns.columns})
+    if not log:
+        out = np.exp(out)
+    return out if p.multi else out.iloc[:, 0]
+
+
+def trend_signal(returns: Any, signal: str = "slow", basis: str = "raw", rf: Any = None, benchmark: Any = None,
+                 periods_per_year: int | None = None, slow: int | None = None, fast: int | None = None,
+                 compound: bool = False) -> Any:
+    """The trailing-mean return series :func:`trend_states` classifies — the ``"slow"`` or
+    ``"fast"`` signal of :func:`paris.momentum_signal` with the same basis and lookbacks."""
+    return momentum_signal(returns, signal, basis, rf, benchmark, periods_per_year, slow, fast, compound)
+
+
+def _centers_long(tables: dict[str, pd.DataFrame], multi: bool) -> pd.DataFrame:
+    if not multi:
+        return next(iter(tables.values()))
+    parts = []
+    for name, tb in tables.items():
+        tb = tb.reset_index()
+        tb.insert(0, "fund", name)
+        parts.append(tb)
+    return pd.concat(parts, ignore_index=True)
+
+
+def risk_centers(returns: Any, vol: str = "ewma", vol_lambda: float = 0.94, vol_window: int = 63,
+                 vol_warmup: int = 60, window: int = 1260, refit: str | None = "ME",
+                 jump_penalty: float = RISK_PENALTY, periods_per_year: int | None = None, n_init: int = 10,
+                 random_state: int = 0, clip: float | None = 3.0, log: bool = False) -> pd.DataFrame:
+    """The fitted risk model per refit date, in annualised-volatility units (``log=True``: in the
+    log units the model sees): ``state0 vol`` (the risk-on centre), ``state1 vol`` (risk-off) and
+    ``threshold`` (their midpoint) — read as "risk-off above about x % annualised". Own-volatility
+    basis; a DataFrame input gives one long table with a leading ``fund`` column."""
+    p = prepare(returns, periods_per_year=periods_per_year)
+    tabs = {}
+    for c in p.returns.columns:
+        feat = _log_vol(p.returns[c], vol, vol_lambda, vol_window, vol_warmup, p.ppy).dropna().rename("vol")
+        tb = jump_centers(feat, jump_penalty, window, refit, 2, n_init, random_state, clip)
+        tabs[c] = tb if log else np.exp(tb)
+    return _centers_long(tabs, p.multi)
+
+
+def trend_centers(returns: Any, basis: str = "raw", rf: Any = None, benchmark: Any = None,
+                  slow: int | None = None, fast: int | None = None, compound: bool = False,
+                  features: tuple[str, ...] = ("slow", "fast"), feature_weights: Any = None,
+                  window: int = 1260, refit: str | None = "ME", jump_penalty: float = TREND_PENALTY,
+                  periods_per_year: int | None = None, n_init: int = 10, random_state: int = 0,
+                  clip: float | None = 3.0) -> pd.DataFrame:
+    """The fitted trend model per refit date in signal units (trailing-mean period returns):
+    ``state0 slow`` / ``state1 slow`` (trend-off / trend-on centres), the same for ``fast`` when
+    used, and ``threshold`` for the slow-only model. A DataFrame input gives one long table with a
+    leading ``fund`` column."""
+    if not features or any(f not in ("slow", "fast") for f in features) or len(set(features)) != len(features) or features[0] != "slow":
+        raise ValueError("features must be ('slow',) or ('slow', 'fast')")
+    p, sig = _signal_frame(returns, basis, rf, benchmark, periods_per_year)
+    k_slow, k_fast = _lookbacks(p.ppy, slow, fast)
+    trail = {"slow": _trailing(sig, k_slow, compound), "fast": _trailing(sig, k_fast, compound)}
+    tabs = {}
+    for c in sig.columns:
+        feat = pd.DataFrame({f: trail[f][c] for f in features}).dropna()
+        tabs[c] = jump_centers(feat, jump_penalty, window, refit, 2, n_init, random_state, clip, feature_weights)
+    return _centers_long(tabs, p.multi)
+
+
 # --------------------------------------------------------------------------- public: trend
 def trend_states(returns: Any, basis: str = "raw", rf: Any = None, benchmark: Any = None,
                  slow: int | None = None, fast: int | None = None, compound: bool = False,
@@ -438,73 +554,54 @@ def trend_states(returns: Any, basis: str = "raw", rf: Any = None, benchmark: An
 
 
 # --------------------------------------------------------------------------- conditional tables
-def _binary_table(states: pd.Series, own: pd.Series, bench: pd.Series | None, ppy: int,
-                  labels: tuple[str, str]) -> pd.DataFrame:
-    keep = states.notna()
-    s, r = states[keep], own[keep]
-    b = bench[keep] if bench is not None else None
-    rows = {}
-    for code, label in enumerate(labels):
-        m = (s == code).to_numpy()
-        x = r[m]
-        row = {"count": float(m.sum()), "frequency": m.mean() if len(s) else float("nan"),
-               "own mean (ann.)": float(x.mean() * ppy) if len(x) else float("nan"),
-               "own vol (ann.)": float(x.std(ddof=1) * np.sqrt(ppy)) if len(x) > 1 else float("nan")}
-        if b is not None:
-            y = b[m]
-            row["benchmark mean (ann.)"] = float(y.mean() * ppy) if len(y) else float("nan")
-            row["benchmark vol (ann.)"] = float(y.std(ddof=1) * np.sqrt(ppy)) if len(y) > 1 else float("nan")
-        rows[label] = row
-    out = pd.DataFrame(rows).T.reindex(list(labels))
-    out.index.name = "state"
-    return out
-
-
 def _long(tables: dict[str, pd.DataFrame], multi: bool) -> pd.DataFrame:
     if not multi:
         return next(iter(tables.values()))
     parts = []
-    for name, t in tables.items():
-        t = t.reset_index()
-        t.insert(0, "fund", name)
-        parts.append(t)
+    for name, tb in tables.items():
+        tb = tb.reset_index()
+        tb.insert(0, "fund", name)
+        parts.append(tb)
     return pd.concat(parts, ignore_index=True)
 
 
-def risk_state_table(returns: Any, basis: str = "own", benchmark: Any = None, **kwargs: Any) -> pd.DataFrame:
-    """Arithmetic average return (annualised), volatility, count and frequency of the periods
-    labelled risk-off / risk-on by :func:`risk_states` (same arguments). With ``basis="benchmark"``
-    the table also reports the benchmark's own conditional moments. Rows = states; a DataFrame
-    input gives one long table with a leading ``fund`` column."""
+_RISK_LABELS = {0.0: "Risk-off", 1.0: "Risk-on"}
+_TREND_LABELS = {0.0: "Trend-off", 1.0: "Trend-on"}
+
+
+def risk_state_table(returns: Any, basis: str = "own", benchmark: Any = None, rf: Any = None,
+                     **kwargs: Any) -> pd.DataFrame:
+    """The unified state table (see :func:`state_table`) for the periods labelled risk-off /
+    risk-on by :func:`risk_states` (same arguments): count, frequency, the fund's mean, vol,
+    skewness and up-frequency, and — with ``basis="benchmark"`` or a ``benchmark`` — the
+    benchmark's mean and vol and the active mean; ``rf`` adds the excess means. Rows = states; a
+    DataFrame input gives one long table with a leading ``fund`` column."""
     ppy_kw = kwargs.get("periods_per_year")
     if basis == "benchmark" and benchmark is None:
         ppy = resolve_periods(prepare(returns, periods_per_year=ppy_kw).returns.index, ppy_kw)
         benchmark = _default_benchmark(ppy)
-    p = prepare(returns, benchmark=benchmark if basis == "benchmark" else None, periods_per_year=ppy_kw)
+    p = prepare(returns, benchmark=benchmark, rf=rf if rf is not None else 0.0, periods_per_year=ppy_kw)
     st = risk_states(p.returns, basis, p.benchmark, **kwargs)
-    st = st.to_frame() if isinstance(st, pd.Series) else st
-    tables = {c: _binary_table(st[c], p.returns[c], p.benchmark if basis == "benchmark" else None,
-                               p.ppy, ("Risk-off", "Risk-on")) for c in p.returns.columns}
-    return _long(tables, p.multi)
+    own = p.returns if p.multi else p.returns.iloc[:, 0]
+    return state_table(own, st, benchmark=p.benchmark, rf=rf, periods_per_year=p.ppy, labels=_RISK_LABELS)
 
 
 def trend_state_table(returns: Any, basis: str = "raw", rf: Any = None, benchmark: Any = None,
                       **kwargs: Any) -> pd.DataFrame:
-    """Arithmetic average return (annualised), volatility, count and frequency of the periods
-    labelled trend-off / trend-on by :func:`trend_states` (same arguments), on the fund's own
-    return and, when a benchmark is given or ``basis="relative"``, on the benchmark's. Rows =
-    states; a DataFrame input gives one long table with a leading ``fund`` column."""
+    """The unified state table for the periods labelled trend-off / trend-on by
+    :func:`trend_states` (same arguments): the fund's own moments and, when a benchmark is given
+    or ``basis="relative"``, the benchmark's mean and vol and the active mean; ``rf`` adds the
+    excess means. Rows = states; a DataFrame input gives one long table with a leading ``fund``
+    column."""
     ppy_kw = kwargs.get("periods_per_year")
     st = trend_states(returns, basis, rf, benchmark, periods_per_year=ppy_kw,
                       **{k: v for k, v in kwargs.items() if k != "periods_per_year"})
-    st = st.to_frame() if isinstance(st, pd.Series) else st
     p, _ = _signal_frame(returns, basis, rf, benchmark, ppy_kw)
     bench = p.benchmark
     if bench is None and benchmark is not None:
-        bench = prepare(returns, benchmark=benchmark, periods_per_year=ppy_kw).benchmark.reindex(p.returns.index)
-    tables = {c: _binary_table(st[c], p.returns[c], bench, p.ppy, ("Trend-off", "Trend-on"))
-              for c in p.returns.columns}
-    return _long(tables, p.multi)
+        bench = prepare(returns, benchmark=benchmark, periods_per_year=ppy_kw).benchmark
+    own = p.returns if p.multi else p.returns.iloc[:, 0]
+    return state_table(own, st, benchmark=bench, rf=rf, periods_per_year=p.ppy, labels=_TREND_LABELS)
 
 
 # --------------------------------------------------------------------------- combinations
@@ -546,51 +643,115 @@ def combine_states(risk: Any, trend: Any, method: str = "graded", cells: dict | 
     return out.where(r.notna() & t.notna())
 
 
-def state_table(returns: Any, states: Any, benchmark: Any = None, periods_per_year: int | None = None,
-                labels: dict | None = None) -> pd.DataFrame:
-    """Count, frequency and the annualised arithmetic mean and volatility of the fund's return (and
-    the benchmark's) over the periods carrying each value of ``states`` (any label or code series,
-    already aligned in time with ``returns``; ``labels`` renames the values). Rows = state values
-    in sorted order; a DataFrame of returns with a DataFrame of states (same columns) gives one
-    long table with a leading ``fund`` column."""
-    p = prepare(returns, benchmark=benchmark, periods_per_year=periods_per_year)
+def _states_frame_like(states: Any, returns: pd.DataFrame) -> pd.DataFrame:
     st = states.to_frame() if isinstance(states, pd.Series) else states
     if not isinstance(st, pd.DataFrame):
         raise ValueError("states must be a Series or DataFrame")
-    if st.shape[1] == 1 and p.returns.shape[1] > 1:
-        st = pd.DataFrame({c: st.iloc[:, 0] for c in p.returns.columns})
-    if list(st.columns) != list(p.returns.columns):
-        st = st.set_axis(p.returns.columns, axis=1) if st.shape[1] == p.returns.shape[1] else st
-    if list(st.columns) != list(p.returns.columns):
-        raise AlignmentError("states must have one column per fund")
+    if st.shape[1] == 1 and returns.shape[1] > 1:
+        st = pd.DataFrame({c: st.iloc[:, 0] for c in returns.columns})
+    if list(st.columns) != list(returns.columns):
+        if st.shape[1] == returns.shape[1]:
+            st = st.set_axis(returns.columns, axis=1)
+        else:
+            raise AlignmentError("states must have one column per fund")
+    return st
 
-    def one(c: str) -> pd.DataFrame:
-        s = st[c].reindex(p.returns.index)
-        keep = s.notna()
-        s, r = s[keep], p.returns[c][keep]
-        b = p.benchmark[keep] if p.benchmark is not None else None
-        values = sorted(pd.unique(s))
+
+def state_table(returns: Any, states: Any, benchmark: Any = None, rf: Any = None,
+                periods_per_year: int | None = None, labels: dict | None = None, shift: int = 0) -> pd.DataFrame:
+    """The unified state-conditional table for ANY label or code series aligned in time with
+    ``returns``: count, frequency, the fund's annualised mean, volatility, population skewness and
+    up-frequency, the benchmark's mean and vol and the active (fund minus benchmark) mean when a
+    benchmark is given, and the excess means when ``rf`` is given. ``shift=0`` pairs the label at
+    *T* with the return of *T* (the convention for the already-lagged jump-model labels);
+    ``shift=1`` pairs the label at *t* with the return at *t+1* (the momentum-state convention).
+    ``labels`` renames the values and fixes the row order. Rows = state values; a DataFrame of
+    returns (with a matching DataFrame or one broadcast Series of states) gives one long table with
+    a leading ``fund`` column."""
+    if not isinstance(shift, (int, np.integer)) or shift < 0:
+        raise ValueError("shift must be a nonnegative integer")
+    p = prepare(returns, benchmark=benchmark, rf=rf if rf is not None else 0.0, periods_per_year=periods_per_year)
+    st = _states_frame_like(states, p.returns)
+    rf_s = p.rf if rf is not None else None
+    tables = {c: _conditional_table(st[c].reindex(p.returns.index), p.returns[c], p.benchmark, rf_s, p.ppy,
+                                    labels, int(shift)) for c in p.returns.columns}
+    return _long(tables, p.multi)
+
+
+def state_transitions(states: Any, order: list | None = None) -> pd.DataFrame:
+    """Transition probabilities from the value at *t* (rows) to the value at *t+1* (columns) of any
+    label or code series (momentum labels, risk / trend binaries, joint codes); ``order`` fixes the
+    row and column order. A DataFrame gives one long table with a leading ``fund`` column."""
+    st = states.to_frame() if isinstance(states, pd.Series) else states
+    if not isinstance(st, pd.DataFrame):
+        raise ValueError("states must be a Series or DataFrame")
+    return _long({c: _transition_table(st[c], order) for c in st.columns}, not isinstance(states, pd.Series))
+
+
+def state_sizing(returns: Any, states: Any, rf: Any = 0.0, window: int | None = None, refit: str | None = "YE",
+                 min_obs: int = 20, periods_per_year: int | None = None, table: bool = False) -> Any:
+    """Causal state-conditional exposure: at every refit date the per-state Sharpe ratio of the
+    fund's excess return is estimated on the history before it (expanding, or the trailing
+    ``window`` observations) and each state's exposure is ``clip(SR_k / max_k SR_k, 0, 1)`` (0 for
+    a state with fewer than ``min_obs`` observations or when no state has a positive Sharpe); the
+    mapping is applied to the labels until the next refit. ``states`` must already be causal (the
+    jump-model labels are). Returns the exposure series (NaN before the first refit), or with
+    ``table=True`` the per-refit exposures per state. Series in, Series out; DataFrame in, one
+    column per fund (long table with ``table=True``)."""
+    if not isinstance(min_obs, (int, np.integer)) or min_obs < 2:
+        raise ValueError("min_obs must be an integer >= 2")
+    if window is not None and (not isinstance(window, (int, np.integer)) or window < min_obs):
+        raise ValueError("window must be None or an integer >= min_obs")
+    p = prepare(returns, rf=rf, periods_per_year=periods_per_year)
+    st = _states_frame_like(states, p.returns)
+    idx = p.returns.index
+    if refit is not None:
+        if not isinstance(idx, pd.DatetimeIndex):
+            raise ValueError("refit needs a DatetimeIndex; pass refit=None for a single estimate")
+        per = _periods(idx, refit)
+
+    def one(c: str) -> tuple[pd.Series, pd.DataFrame]:
+        s = st[c].reindex(idx).to_numpy(dtype=float)
+        ex = p.excess[c].to_numpy(dtype=float)
+        n = len(s)
+        valid = ~np.isnan(s)
+        first = int(np.argmax(valid)) if valid.any() else n
+        # refit positions: first observation of each period after enough labelled history
+        cand = [i for i in range(first + 1, n) if refit is None or per[i] != per[i - 1]]
+        starts = [i for i in cand if np.sum(valid[max(0, i - window) if window else 0:i]) >= min_obs]
+        if refit is None:
+            starts = starts[:1]
+        expo = np.full(n, np.nan)
         rows = {}
-        for v in values:
-            m = (s == v).to_numpy()
-            x = r[m]
-            row = {"count": float(m.sum()), "frequency": m.mean(),
-                   "own mean (ann.)": float(x.mean() * p.ppy) if len(x) else float("nan"),
-                   "own vol (ann.)": float(x.std(ddof=1) * np.sqrt(p.ppy)) if len(x) > 1 else float("nan")}
-            if b is not None:
-                y = b[m]
-                row["benchmark mean (ann.)"] = float(y.mean() * p.ppy) if len(y) else float("nan")
-                row["benchmark vol (ann.)"] = float(y.std(ddof=1) * np.sqrt(p.ppy)) if len(y) > 1 else float("nan")
-            rows[labels.get(v, v) if labels else v] = row
-        out = pd.DataFrame(rows).T
-        out.index.name = "state"
-        return out
+        values = sorted(pd.unique(s[valid]))
+        for j, i in enumerate(starts):
+            stop = starts[j + 1] if j + 1 < len(starts) else n
+            lo = max(0, i - window) if window else 0
+            hs, hx = s[lo:i], ex[lo:i]
+            sr = {}
+            for v in values:
+                m = hs == v
+                x = hx[m]
+                sr[v] = float(x.mean() / x.std(ddof=1)) if m.sum() >= min_obs and x.std(ddof=1) > 0 else 0.0
+            top = max(sr.values()) if sr else 0.0
+            mapping = {v: (float(np.clip(q / top, 0.0, 1.0)) if top > 0 else 0.0) for v, q in sr.items()}
+            rows[idx[i]] = mapping
+            seg = s[i:stop]
+            expo[i:stop] = [mapping.get(v, np.nan) if not np.isnan(v) else np.nan for v in seg]
+        tb = pd.DataFrame(rows).T.reindex(columns=values)
+        tb.index.name = "refit"
+        return pd.Series(expo, index=idx, name="exposure"), tb
 
-    return _long({c: one(c) for c in p.returns.columns}, p.multi)
+    res = {c: one(c) for c in p.returns.columns}
+    if table:
+        return _long({c: v[1] for c, v in res.items()}, p.multi)
+    out = pd.DataFrame({c: v[0] for c, v in res.items()})
+    return out if p.multi else out.iloc[:, 0]
 
 
 _JOINT_LABELS = {0: "Risk-off & Trend-off", 1: "Risk-off & Trend-on", 2: "Risk-on & Trend-off",
                  3: "Risk-on & Trend-on"}
+_JOINT_LABELS_F = {float(k): v for k, v in _JOINT_LABELS.items()}
 
 
 def joint_state_table(returns: Any, benchmark: Any = None, risk_kwargs: dict | None = None,
@@ -607,8 +768,8 @@ def joint_state_table(returns: Any, benchmark: Any = None, risk_kwargs: dict | N
     code = (r * 2 + t.reindex(r.index)).where(r.notna() & t.notna())
     if not p.multi:  # a Series input keeps the wide layout (rows = cells), as every other table
         return state_table(p.returns.iloc[:, 0], code.iloc[:, 0], benchmark=p.benchmark,
-                           periods_per_year=p.ppy, labels=_JOINT_LABELS)
-    return state_table(p.returns, code, benchmark=p.benchmark, periods_per_year=p.ppy, labels=_JOINT_LABELS)
+                           periods_per_year=p.ppy, labels=_JOINT_LABELS_F)
+    return state_table(p.returns, code, benchmark=p.benchmark, periods_per_year=p.ppy, labels=_JOINT_LABELS_F)
 
 
 _JOINT_FEATURES = ("logvol", "slow", "fast")

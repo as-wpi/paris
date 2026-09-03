@@ -199,30 +199,7 @@ def momentum_state_age(returns: Any, basis: str = "raw", rf: Any = None, benchma
 
 
 # --------------------------------------------------------------------------- conditional tables
-def _next_by_state(states: pd.Series, sig: pd.Series) -> tuple[pd.Series, pd.Series]:
-    """Pairs (state at t, return at t+1) with both defined."""
-    s, r = states.iloc[:-1], sig.iloc[1:]
-    keep = s.notna().to_numpy()
-    return s[keep].reset_index(drop=True), r[keep].reset_index(drop=True)
-
-
-def _state_table(states: pd.Series, sig: pd.Series, ppy: int) -> pd.DataFrame:
-    s, r = _next_by_state(states, sig)
-    rows = {}
-    for st in STATES:
-        x = r[(s == st).to_numpy()]
-        n = len(x)
-        rows[st] = {
-            "count": float(n),
-            "frequency": n / len(s) if len(s) else float("nan"),
-            "mean (ann.)": float(x.mean() * ppy) if n else float("nan"),
-            "volatility (ann.)": float(x.std(ddof=1) * np.sqrt(ppy)) if n > 1 else float("nan"),
-            "skewness": float(_pop_skew(x.to_numpy())) if n > 2 else float("nan"),
-            "up frequency": float((x > 0).mean()) if n else float("nan"),
-        }
-    out = pd.DataFrame(rows).T.reindex(list(STATES))
-    out.index.name = "state"
-    return out
+_STATE_COLS = ("count", "frequency", "own mean (ann.)", "own vol (ann.)", "own skewness", "own up frequency")
 
 
 def _pop_skew(x: np.ndarray) -> float:
@@ -230,15 +207,67 @@ def _pop_skew(x: np.ndarray) -> float:
     return float("nan") if m2 == 0 else float(np.mean((x - x.mean()) ** 3) / m2 ** 1.5)
 
 
-def _transitions(states: pd.Series) -> pd.DataFrame:
+def _moments(x: np.ndarray, ppy: int, prefix: str, full: bool) -> dict:
+    n = len(x)
+    out = {f"{prefix} mean (ann.)": float(x.mean() * ppy) if n else float("nan")}
+    if full:
+        out[f"{prefix} vol (ann.)"] = float(x.std(ddof=1) * np.sqrt(ppy)) if n > 1 else float("nan")
+        out[f"{prefix} skewness"] = _pop_skew(x) if n > 2 else float("nan")
+        out[f"{prefix} up frequency"] = float((x > 0).mean()) if n else float("nan")
+    return out
+
+
+def _conditional_table(states: pd.Series, own: pd.Series, bench: pd.Series | None, rf: pd.Series | None,
+                       ppy: int, labels: dict | None, shift: int) -> pd.DataFrame:
+    """The unified state-conditional table. ``shift=0`` pairs the label at *T* with the return of
+    *T* (already-lagged labels); ``shift=1`` pairs the state at *t* with the return at *t+1*.
+    Columns: count, frequency, own mean / vol / skewness / up frequency; with a benchmark also its
+    mean and vol and the active mean; with ``rf`` the excess means. Rows follow ``labels`` (a
+    ``{value: name}`` dict in the wanted order) or the sorted values."""
+    idx = states.index
+    sv = states.to_numpy(dtype=object)
+    cols = {"own": own.reindex(idx).to_numpy(dtype=float)}
+    if bench is not None:
+        b = bench.reindex(idx).to_numpy(dtype=float)
+        cols["benchmark"] = b
+        cols["active"] = cols["own"] - b
+    if rf is not None:
+        f = rf.reindex(idx).to_numpy(dtype=float)
+        cols["own excess"] = cols["own"] - f
+        if bench is not None:
+            cols["benchmark excess"] = cols["benchmark"] - f
+    if shift:
+        sv = sv[:-shift]
+        cols = {k: v[shift:] for k, v in cols.items()}
+    keep = np.array([not (x is None or (isinstance(x, float) and np.isnan(x))) for x in sv]) & ~np.isnan(cols["own"])
+    sv = sv[keep]
+    cols = {k: v[keep] for k, v in cols.items()}
+    values = list(labels) if labels else sorted(pd.unique(sv))
+    rows = {}
+    for v in values:
+        m = np.array([x == v for x in sv], dtype=bool)
+        row = {"count": float(m.sum()), "frequency": float(m.mean()) if len(sv) else float("nan")}
+        for name, x in cols.items():
+            row.update(_moments(x[m], ppy, name, full=(name in ("own", "benchmark"))))
+        rows[labels[v] if labels else v] = row
+    out = pd.DataFrame(rows).T
+    out.index.name = "state"
+    return out
+
+
+def _transition_table(states: pd.Series, order: list | None = None) -> pd.DataFrame:
+    """Transition probabilities from the value at *t* (rows) to the value at *t+1* (columns) over
+    consecutive defined observations; NaN row for a value never left."""
     s = states.dropna()
-    a, b = s.iloc[:-1].to_numpy(), s.iloc[1:].to_numpy()
-    out = pd.DataFrame(0.0, index=list(STATES), columns=list(STATES))
-    for st in STATES:
-        m = a == st
+    a, b = s.iloc[:-1].to_numpy(dtype=object), s.iloc[1:].to_numpy(dtype=object)
+    vals = list(order) if order else sorted(pd.unique(s.to_numpy(dtype=object)))
+    out = pd.DataFrame(np.nan, index=vals, columns=vals, dtype=float)
+    for v in vals:
+        m = np.array([x == v for x in a], dtype=bool)
         n = int(m.sum())
-        for nxt in STATES:
-            out.loc[st, nxt] = float((b[m] == nxt).sum() / n) if n else float("nan")
+        if n:
+            for nxt in vals:
+                out.loc[v, nxt] = float(np.sum([y == nxt for y in b[m]]) / n)
     out.index.name, out.columns.name = "from", "to"
     return out
 
@@ -257,12 +286,15 @@ def _long(tables: dict[str, pd.DataFrame], multi: bool) -> pd.DataFrame:
 def momentum_state_table(returns: Any, basis: str = "raw", rf: Any = None, benchmark: Any = None,
                          periods_per_year: int | None = None, slow: int | None = None,
                          fast: int | None = None, compound: bool = False) -> pd.DataFrame:
-    """The paper's Figure 1 for one series: by state at *t*, the count and relative frequency of
-    the state and the annualised mean, annualised volatility, population skewness and up-frequency
-    of the *subsequent* return (on the same ``basis``). Rows = states; a DataFrame input gives one
-    long table with a leading ``fund`` column."""
+    """The paper's Figure 1: by state at *t*, count and frequency of the state and the annualised
+    mean, volatility, population skewness and up-frequency of the return at *t+1* on the same
+    ``basis`` (the series the signals see: raw, excess or active). Rows = states; a DataFrame input
+    gives one long table with a leading ``fund`` column. Columns are shared with every other state
+    table (``own ...``); :func:`momentum_conditional_table` adds the benchmark, active and excess
+    views of the fund's own return."""
     p, sig, states = _states_frame(returns, basis, rf, benchmark, periods_per_year, slow, fast, compound)
-    return _long({c: _state_table(states[c], sig[c], p.ppy) for c in states.columns}, p.multi)
+    lab = {s: s for s in STATES}
+    return _long({c: _conditional_table(states[c], sig[c], None, None, p.ppy, lab, 1) for c in states.columns}, p.multi)
 
 
 def momentum_transitions(returns: Any, basis: str = "raw", rf: Any = None, benchmark: Any = None,
@@ -272,49 +304,25 @@ def momentum_transitions(returns: Any, basis: str = "raw", rf: Any = None, bench
     *t+1* (columns); NaN row for a state never visited. A DataFrame input gives one long table with
     a leading ``fund`` column."""
     p, _, states = _states_frame(returns, basis, rf, benchmark, periods_per_year, slow, fast, compound)
-    return _long({c: _transitions(states[c]) for c in states.columns}, p.multi)
+    return _long({c: _transition_table(states[c], list(STATES)) for c in states.columns}, p.multi)
 
 
 def momentum_conditional_table(returns: Any, benchmark: Any = None, rf: Any = None, basis: str = "raw",
                                periods_per_year: int | None = None, slow: int | None = None,
                                fast: int | None = None, compound: bool = False) -> pd.DataFrame:
-    """By state at *t*: count, frequency and the annualised arithmetic mean of the return at *t+1*
-    of the fund (``own``), of the benchmark and of the active return (fund minus benchmark) when a
-    benchmark is given or ``basis="relative"`` (bundled S&P 500 proxy by default), and of the excess
-    returns when ``rf`` is given. The states follow ``basis`` exactly as :func:`momentum_states`.
-    Rows = states; a DataFrame input gives one long table with a leading ``fund`` column."""
+    """By state at *t*: count, frequency and the moments of the return at *t+1* of the fund
+    (``own`` mean, vol, skewness, up frequency), of the benchmark (mean, vol) and of the active
+    return (mean) when a benchmark is given or ``basis="relative"`` (bundled S&P 500 proxy by
+    default), and the excess means when ``rf`` is given. The states follow ``basis`` exactly as
+    :func:`momentum_states`. Rows = states; a DataFrame input gives one long table with a leading
+    ``fund`` column."""
     p, sig, states = _states_frame(returns, basis, rf, benchmark, periods_per_year, slow, fast, compound)
     bench = p.benchmark
     if bench is None and benchmark is not None:
         bench = prepare(returns, benchmark=benchmark, periods_per_year=periods_per_year).benchmark
     rf_s = p.rf if (rf is not None or basis == "excess") else None
-
-    def table(c: str) -> pd.DataFrame:
-        s = states[c]
-        cols = {"own": p.returns[c]}
-        if bench is not None:
-            b = bench.reindex(s.index)
-            cols["benchmark"] = b
-            cols["active"] = p.returns[c] - b
-        if rf_s is not None:
-            r = rf_s.reindex(s.index)
-            cols["own excess"] = p.returns[c] - r
-            if bench is not None:
-                cols["benchmark excess"] = cols["benchmark"] - r
-        rows = {}
-        for st in STATES:
-            m = (s.iloc[:-1] == st).to_numpy()
-            row = {"count": float(m.sum()), "frequency": m.sum() / s.iloc[:-1].notna().sum()
-                   if s.iloc[:-1].notna().any() else float("nan")}
-            for name, x in cols.items():
-                nxt = x.iloc[1:].to_numpy()[m]
-                row[f"{name} mean (ann.)"] = float(np.nanmean(nxt) * p.ppy) if len(nxt) and not np.all(np.isnan(nxt)) else float("nan")
-            rows[st] = row
-        out = pd.DataFrame(rows).T.reindex(list(STATES))
-        out.index.name = "state"
-        return out
-
-    return _long({c: table(c) for c in states.columns}, p.multi)
+    lab = {s: s for s in STATES}
+    return _long({c: _conditional_table(states[c], p.returns[c], bench, rf_s, p.ppy, lab, 1) for c in states.columns}, p.multi)
 
 
 def regime_runs(states: Any) -> pd.DataFrame:
@@ -381,6 +389,13 @@ def momentum_speed_weights(returns: Any, a: float = 0.5, speeds: dict[str, float
     p, _, states = _states_frame(returns, basis, rf, benchmark, periods_per_year, slow, fast, compound)
     out = pd.DataFrame({c: _positions(states[c], a, speeds) for c in states.columns})
     return _unwrap(out, p.multi)
+
+
+def _next_by_state(states: pd.Series, sig: pd.Series) -> tuple[pd.Series, pd.Series]:
+    """Pairs (state at t, return at t+1) with both defined."""
+    s, r = states.iloc[:-1], sig.iloc[1:]
+    keep = s.notna().to_numpy()
+    return s[keep].reset_index(drop=True), r[keep].reset_index(drop=True)
 
 
 def _dynamic(states: pd.Series, sig: pd.Series) -> pd.Series:
