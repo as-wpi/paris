@@ -67,6 +67,7 @@ paris.joint_state_table(d["SPY"], risk_kwargs={"window": 252}, trend_kwargs={"wi
 paris.joint_states(d["SPY"], features=("logvol", "slow", "fast"), n_states=4, window=252)      # one model, several features
 paris.state_table(d["SPY"], r, benchmark=d["FCNTX"], rf=0.02)  # the unified conditional table for any label series
 paris.state_transitions(r), paris.risk_signal(d["SPY"]), paris.risk_centers(d["SPY"], window=252)  # transitions, feature, fitted threshold
+paris.trend_states(d["SPY"], window=252, calibration="expanding")  # centres from all history before each refit (window = minimum)
 paris.state_sizing(d["SPY"], r * 2 + t, refit="QE")   # causal per-state exposure (Sharpe-scaled, re-estimated each refit)
 paris.regime_runs(paris.momentum_states(d["SPY"]))  # contiguous spans (start, end, state, length) for a colour-coded ribbon
 ```
@@ -126,7 +127,7 @@ vendor-specific ships.
 | `attribution.py` | weights → portfolio return with drift / rebalancing, per-period contributions, BOP/EOP weights, linked multi-period contributions, active contribution, Brinson attribution (BF/BHB; Carino, Menchero or arithmetic linking) |
 | `budgeting.py` | Euler contributions to volatility, VaR (Gaussian, Cornish-Fisher) and CVaR (historical, Gaussian, Cornish-Fisher) for one weight vector; marginal VaR / CVaR |
 | `regimes.py` | Goulding–Harvey–Mazzoleni (2023) momentum turning points: slow/fast signals, Bull / Correction / Bear / Rebound state series on a raw, excess-of-rf or benchmark-relative basis (S&P 500 default), latest state and its age, conditional subsequent-return tables (own / benchmark / active, excess), transition matrix, regime run table, intermediate-speed strategy weights and the Sharpe-maximising dynamic speeds (imports `paris.data` lazily for the default benchmark) |
-| `jump.py` | statistical jump model (pure numpy, checked exactly against `jumpmodels`): hindsight labels, causal rolling-calibration / online-inference states, the two binary indicators — risk-on/off on log volatility (own or S&P 500 basis) and trend-on/off on the slow/fast momentum signals — their combinations (`combine_states`), joint multi-feature models (`joint_states`) and conditional return tables by state or joint cell (imports `regimes`) |
+| `jump.py` | statistical jump model (pure numpy, checked exactly against `jumpmodels`): hindsight labels, causal rolling- or expanding-calibration / online-inference states, the two binary indicators — risk-on/off on log volatility (own or S&P 500 basis) and trend-on/off on the slow/fast momentum signals — their combinations (`combine_states`), joint multi-feature models (`joint_states`) and conditional return tables by state or joint cell (imports `regimes`) |
 | `summary.py` / `portfolio.py` | `stats()` table and the `Portfolio` convenience wrapper (these two import all topic modules) |
 
 Defaults follow the industry-standard R reference package; every convention that differs between
