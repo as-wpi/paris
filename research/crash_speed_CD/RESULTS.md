@@ -1,0 +1,60 @@
+# Crash speed — tests C and D — 2026-09-03
+
+Pre-registration: `preregistration_CD.json`. Ceiling from test A: sizer-only k=5 bound = 25% of fast-crash MaxDD.
+
+## Full sample (medians across 16 vehicles; Δ paired vs incumbent)
+
+| Arm | Sharpe | Martin | MaxDD | Turnover/yr | Track RMSE (ungated) |
+|---|---:|---:|---:|---:|---:|
+| incumbent | 0.43 | 0.63 | -26.8% | 2.4 | 1.7% |
+| C_85 | 0.42 | 0.62 | -25.7% | 3.4 | 1.6% |
+| C_80 | 0.42 | 0.61 | -24.9% | 4.0 | 1.6% |
+| D_shock | 0.43 | 0.62 | -25.3% | 3.2 |  |
+| D_shock_on_C_85 | 0.42 | 0.64 | -24.0% | 3.9 |  |
+| D_shock_on_C_80 | 0.42 | 0.62 | -23.8% | 4.5 |  |
+
+## Fast-crash episodes — median MaxDD by arm
+
+| Episode | incumbent | C_85 | C_80 | D_shock | D_shock_on_C_85 | D_shock_on_C_80 |
+|---|---:|---:|---:|---:|---:|---:|
+| E1987_crash | -6.1% | -5.3% | -4.9% | -6.1% | -5.3% | -4.9% |
+| E1998_ltcm | -7.9% | -7.2% | -6.7% | -7.9% | -7.2% | -6.7% |
+| X_2020_covid | -11.9% | -10.8% | -10.5% | -10.9% | -10.4% | -10.0% |
+| E_bear_2018q4 | -6.1% | -5.8% | -5.6% | -5.9% | -5.6% | -5.5% |
+| K1995_99_bull | -10.3% | -9.7% | -9.6% | -10.3% | -9.7% | -9.6% |
+| K2013_14_bull | -7.2% | -7.0% | -7.2% | -7.2% | -6.8% | -7.0% |
+| A_bull_2021 | -9.5% | -10.0% | -10.3% | -9.8% | -10.2% | -10.2% |
+| D_recent_2025plus | -9.3% | -9.2% | -8.9% | -9.3% | -9.2% | -9.0% |
+
+## Pre-registered decision rule
+
+
+**C_85: RETIRE** — fast-crash ΔMaxDD +0.7 pts (bar +2.0); ΔSharpe -0.016 (CI [-0.024, -0.005], bar −0.02); turnover ×1.37 (bar 1.25); calm-control bleed FAIL.
+- K1995_99_bull: bleed vs B&H +0.31 (arm) vs +0.29 (incumbent) ok
+- K2013_14_bull: bleed vs B&H +0.51 (arm) vs +0.43 (incumbent) ok
+- A_bull_2021: bleed vs B&H +0.63 (arm) vs +0.48 (incumbent) FAIL
+- D_recent_2025plus: bleed vs B&H +0.18 (arm) vs +0.13 (incumbent) ok
+
+**C_80: RETIRE** — fast-crash ΔMaxDD +1.2 pts (bar +2.0); ΔSharpe -0.025 (CI [-0.037, -0.008], bar −0.02); turnover ×1.60 (bar 1.25); calm-control bleed FAIL.
+- K1995_99_bull: bleed vs B&H +0.28 (arm) vs +0.29 (incumbent) ok
+- K2013_14_bull: bleed vs B&H +0.50 (arm) vs +0.43 (incumbent) ok
+- A_bull_2021: bleed vs B&H +0.66 (arm) vs +0.48 (incumbent) FAIL
+- D_recent_2025plus: bleed vs B&H +0.20 (arm) vs +0.13 (incumbent) ok
+
+**D_shock: RETIRE** — fast-crash ΔMaxDD +0.0 pts (bar +2.0); ΔSharpe +0.004 (CI [-0.003, +0.014], bar −0.02); turnover ×1.23 (bar 1.25); calm-control bleed pass.
+- K1995_99_bull: bleed vs B&H +0.37 (arm) vs +0.29 (incumbent) ok
+- K2013_14_bull: bleed vs B&H +0.40 (arm) vs +0.43 (incumbent) ok
+- A_bull_2021: bleed vs B&H +0.44 (arm) vs +0.48 (incumbent) ok
+- D_recent_2025plus: bleed vs B&H +0.17 (arm) vs +0.13 (incumbent) ok
+
+**D_shock_on_C_85: RETIRE** — fast-crash ΔMaxDD +0.7 pts (bar +2.0); ΔSharpe -0.018 (CI [-0.025, -0.004], bar −0.02); turnover ×1.47 (bar 1.25); calm-control bleed FAIL.
+- K1995_99_bull: bleed vs B&H +0.34 (arm) vs +0.29 (incumbent) ok
+- K2013_14_bull: bleed vs B&H +0.50 (arm) vs +0.43 (incumbent) ok
+- A_bull_2021: bleed vs B&H +0.62 (arm) vs +0.48 (incumbent) FAIL
+- D_recent_2025plus: bleed vs B&H +0.22 (arm) vs +0.13 (incumbent) ok
+
+**D_shock_on_C_80: RETIRE** — fast-crash ΔMaxDD +1.2 pts (bar +2.0); ΔSharpe -0.021 (CI [-0.043, -0.010], bar −0.02); turnover ×1.71 (bar 1.25); calm-control bleed FAIL.
+- K1995_99_bull: bleed vs B&H +0.32 (arm) vs +0.29 (incumbent) ok
+- K2013_14_bull: bleed vs B&H +0.50 (arm) vs +0.43 (incumbent) ok
+- A_bull_2021: bleed vs B&H +0.63 (arm) vs +0.48 (incumbent) FAIL
+- D_recent_2025plus: bleed vs B&H +0.21 (arm) vs +0.13 (incumbent) ok
