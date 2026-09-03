@@ -7,6 +7,13 @@ under **Changed**.
 
 ## Unreleased
 
+### Added
+- `calibration="expanding"` on `jump_states`, `jump_centers`, `risk_states`, `trend_states`,
+  `joint_states`, `risk_centers` and `trend_centers`: each refit is fitted on every observation
+  before it, with `window` as the minimum training length, instead of the last `window`
+  observations. Default stays `"rolling"`; the online lookback is unchanged. Golden cases
+  `*/expanding`; causality test.
+
 ### Research (no library change)
 - `research/frozen_rule_benchmark.py` + `research/frozen_rule_benchmark/`: pre-registered benchmark of
   the untouched PARIS regimes against the rtl-screener's frozen two-term rule and S1×S2×S3 stack on

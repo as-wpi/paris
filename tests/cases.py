@@ -672,6 +672,7 @@ _add(
         "lookback126": ((LOGVOL, 20.0), {"window": 252, "lookback": 126}),
         "two_features": ((SIGNALS, 20.0), W),
         "lam50_window504": ((LOGVOL, 50.0), {"window": 504}),
+        "expanding": ((LOGVOL, 20.0), {"window": 252, "calibration": "expanding"}),
     },
 )
 _add(
@@ -684,6 +685,7 @@ _add(
         "rolling63": ((DSPX,), {"vol": "rolling", "window": 252}),
         "lag0_lam10": ((DSPX,), {"lag": 0, "jump_penalty": 10.0, "window": 252}),
         "lookback126_quarterly": ((DSPX,), {"window": 252, "lookback": 126, "refit": "QE"}),
+        "expanding": ((DSPX,), {"window": 252, "calibration": "expanding"}),
     },
 )
 _add(
@@ -696,6 +698,7 @@ _add(
         "excess_rf_scalar": ((DSPX,), {"basis": "excess", "rf": 0.02, "window": 252}),
         "relative_default_spx": ((DFC,), {"basis": "relative", "window": 252}),
         "compound_lag0": ((DSPX,), {"compound": True, "lag": 0, "window": 252}),
+        "expanding": ((DSPX,), {"window": 252, "calibration": "expanding"}),
     },
 )
 _add(
@@ -794,7 +797,8 @@ _add(
         "single_fit": ((LOGVOL, 20.0), {"window": 252, "refit": None}),
     },
 )
-_add("risk_centers", {"default": ((DSPX,), W), "log_frame": ((DAILY,), {"log": True, "window": 252}), "quarterly": ((DSPX,), {"window": 252, "refit": "QE"})})
+_add("risk_centers", {"default": ((DSPX,), W), "log_frame": ((DAILY,), {"log": True, "window": 252}), "quarterly": ((DSPX,), {"window": 252, "refit": "QE"}),
+                      "expanding": ((DSPX,), {"window": 252, "calibration": "expanding"})})
 _add("trend_centers", {"default": ((DSPX,), W), "slow_only_frame": ((DAILY,), {"features": ("slow",), "window": 252}),
                        "relative_weights": ((DFC,), {"basis": "relative", "feature_weights": [1.0, 0.5], "window": 252})})
 _add(

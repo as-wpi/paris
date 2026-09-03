@@ -73,6 +73,22 @@ def test_rolling_states_are_causal(spy):
     assert fullt.loc[:"2024-06-28"].equals(paris.trend_states(spy.loc[:"2024-06-28"], **W))
 
 
+def test_expanding_calibration_is_causal_and_uses_all_history(spy, logvol):
+    kw = dict(calibration="expanding", **W)
+    full = paris.risk_states(spy, **kw)
+    for cut in ("2023-06-15", "2024-12-31"):
+        assert full.loc[:cut].equals(paris.risk_states(spy.loc[:cut], **kw)), cut
+    # the first fit is identical to the rolling one (training set = the first window) ...
+    roll = paris.jump_centers(logvol, 20.0, **W)
+    exp_ = paris.jump_centers(logvol, 20.0, **kw)
+    pd.testing.assert_frame_equal(roll.iloc[:1], exp_.iloc[:1])
+    # ... later fits differ (they see more than the last window) and every refit date is kept
+    assert list(roll.index) == list(exp_.index)
+    assert not np.allclose(roll.iloc[1:].to_numpy(), exp_.iloc[1:].to_numpy())
+    with pytest.raises(ValueError):
+        paris.jump_states(logvol, 20.0, window=252, calibration="forgetting")
+
+
 def test_feature_weights_are_causal_and_effective(spy, logvol, inputs):
     # weights are applied inside every rolling window (no full-sample statistic): truncating the
     # history must leave earlier labels unchanged, exactly as without weights
