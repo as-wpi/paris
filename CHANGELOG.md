@@ -5,6 +5,50 @@ All notable changes to PARIS are recorded here, one section per release. Version
 are never changed silently: a change to a default convention is a breaking change and is listed
 under **Changed**.
 
+## 0.8.0 — 2026-09-02 — Combining the risk and trend indicators (fork: as-wpi/paris)
+
+### Added
+- `combine_states(risk, trend, method)`: exposure in [0, 1] from the two binaries — `"graded"`
+  (`(risk + trend) / 2`, the default), `"gate"` (trend gates, risk sizes to ½), `"and"`, `"or"`, and
+  `"cells"` (an explicit exposure per joint cell, the hook for state-conditional sizing).
+- `state_table(returns, states)`: count, frequency, annualised mean and volatility of the fund's
+  (and benchmark's) return over the periods carrying each value of any label or code series.
+- `joint_state_table`: the four cells of risk × trend with the same statistics — the evidence for
+  how to combine the two indicators.
+- `joint_states`: one jump model on any ordered subset of `("logvol", "slow", "fast")` with
+  `n_states` states and optional `feature_weights`; states ordered by the first feature's centre;
+  same rolling calibration, online inference and `lag` conventions.
+- `research/walkforward_jump.py`: expanding-window, annually re-selected walk-forward of every
+  indicator, combination and joint model on the US market factor and eight ETFs, 10 bp one-way
+  cost; results in `research/walkforward_2026-09-02/`.
+
+### Fixed
+- `feature_weights` (in `trend_states`, now also `joint_states` and `jump_states`) were applied to
+  features standardised on the **full sample** before the rolling scaler: a look-ahead through the
+  full-sample mean, sd and clip, and — because the per-window scaler then divided by the weighted
+  sd — no effect on the clustering at all. Weights now multiply the standardised, clipped features
+  inside every training and lookback window. Values with weights change; unweighted results are
+  unchanged. The truncation test now covers weighted models.
+
+### Causality audit
+- The only hindsight function is `jump_labels` (a full-sample fit, for research). No indicator,
+  table or the walk-forward script calls it; every state comes from `jump_states` (rolling fit on
+  the window *before* each refit date, forward-only online inference, `lag=1`). Exposure sizing and
+  candidate selection in the walk-forward use history up to the prior year-end only; the script has
+  no whole-history option.
+
+### Walk-forward evidence (`research/walkforward_2026-09-02/CROSS_ASSET.md`)
+- Nine series (US market factor 1995–2026; SPY, QQQ, XLK, IWM, EFA, EEM, TLT, GLD from 2002–2013
+  to 2026), t+0 execution, 10 bp one-way, T-bill cash. On the eight ETFs — untouched by any tuning —
+  trend-on/off (λ = 5) is the best single rule: Sharpe above buy-and-hold on 5 of 8 (mean 0.51 vs
+  0.46), max drawdown better on 8 of 8 (mean −25 % vs −45 %), Martin on 7 of 8 (1.12 vs 0.75).
+  The combinations buy drawdown protection rather than Sharpe: `gate` −22 % mean max drawdown at
+  buy-and-hold Sharpe, `graded` similar; `and` too restrictive, `or` gives the protection back.
+  Risk-on/off alone is weak outside US equities. Annual re-selection over ~100 candidates is
+  harmful (2 of 8), and the joint multi-feature models with causal sizing do not beat the two
+  binaries. Every rule gives up CAGR: these are drawdown gates, not return signals. No default
+  changed on this evidence; `combine_states` keeps `"graded"` as its default.
+
 ## 0.7.0 — 2026-09-02 — Jump-model risk-on/off and trend-on/off indicators (fork: as-wpi/paris)
 
 ### Added

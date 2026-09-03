@@ -1,0 +1,21 @@
+year,selected,selection Sharpe
+2007,risk λ=10,0.187
+2008,joint3f K=4 λ=5,1.123
+2009,joint2f K=4 λ=20,0.458
+2010,cells r100/t10,0.938
+2011,cells r100/t10,0.906
+2012,cells r100/t10,0.842
+2013,joint2f K=4 λ=20,0.826
+2014,joint2f K=4 λ=20,0.863
+2015,cells r50/t2,0.905
+2016,joint2f K=4 λ=20,0.791
+2017,cells r100/t10,0.774
+2018,joint2f K=4 λ=20,0.858
+2019,cells r50/t10,0.795
+2020,cells r50/t10,0.781
+2021,cells r50/t2,0.807
+2022,cells r20/t2,0.87
+2023,cells r50/t2,0.801
+2024,cells r50/t2,0.825
+2025,cells r50/t2,0.824
+2026,joint3f K=4 λ=5,0.849

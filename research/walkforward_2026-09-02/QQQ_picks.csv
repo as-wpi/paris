@@ -1,0 +1,20 @@
+year,selected,selection Sharpe
+2008,joint3f K=4 λ=5,0.883
+2009,joint3f K=4 λ=20,0.621
+2010,cells r100/t5,0.951
+2011,cells r100/t5,0.924
+2012,cells r100/t5,0.843
+2013,joint3f K=4 λ=5,0.865
+2014,cells r100/t5,0.956
+2015,cells r50/t2,1.0
+2016,cells r100/t5,0.923
+2017,cells r50/t10,0.913
+2018,cells r50/t10,0.998
+2019,cells r100/t5,0.953
+2020,cells r100/t5,0.944
+2021,or r50/t5,0.934
+2022,cells r20/t5,0.94
+2023,or r50/t5,0.901
+2024,cells r100/t5,0.92
+2025,or r50/t5,0.921
+2026,cells r50/t5,0.903
