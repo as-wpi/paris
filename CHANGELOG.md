@@ -5,6 +5,38 @@ All notable changes to PARIS are recorded here, one section per release. Version
 are never changed silently: a change to a default convention is a breaking change and is listed
 under **Changed**.
 
+## 0.9.0 — 2026-09-03 — Parity for the jump-model regimes: tables, signals, fitted centres, causal sizing (fork: as-wpi/paris)
+
+### Added
+- One conditional-table engine behind every state table. `state_table(returns, states, benchmark,
+  rf, shift, labels)` reports count, frequency, the fund's annualised mean, volatility, population
+  skewness and up-frequency, the benchmark's same four moments and the active mean when a
+  benchmark is given, and the excess means when `rf` is given, for ANY label or code series. `shift=0` pairs the
+  label at *T* with the return of *T* (already-lagged jump labels); `shift=1` pairs *t* with *t+1*
+  (momentum states). `risk_state_table`, `trend_state_table` and `joint_state_table` now return
+  these columns (plus `rf` support); `momentum_state_table` and `momentum_conditional_table`
+  delegate to the same engine.
+- `state_transitions(states, order)`: the transition matrix of any label or code series;
+  `momentum_transitions` delegates to it.
+- `risk_signal` (the annualised EWMA or rolling volatility the risk model classifies, `log=True`
+  for the actual feature) and `trend_signal` (the named alias of the momentum signals).
+- `jump_centers`: per refit date, the fitted centres in original feature units and, for a
+  one-feature two-state model, `threshold` (the midpoint of the centres, the zero-penalty switching
+  level). `risk_centers` reports them in annualised-volatility units ("risk-off above about x %");
+  `trend_centers` in signal units.
+- `state_sizing(returns, states, rf, window, refit, min_obs, table)`: causal state-conditional
+  exposure — per-state Sharpe on the history before each refit (expanding or rolling), exposure
+  `clip(SR_k / max SR, 0, 1)`, applied until the next refit; `table=True` gives the per-refit
+  mapping. The library form of the walk-forward's sizing rule and the causal counterpart of
+  `dynamic_speeds` for the jump-model states. Truncation tests assert causality.
+
+### Changed
+- `momentum_state_table` columns are renamed to the unified names: `mean (ann.)` → `own mean
+  (ann.)`, `volatility (ann.)` → `own vol (ann.)`, `skewness` → `own skewness`, `up frequency` →
+  `own up frequency`. `momentum_conditional_table` gains the vol, skewness and up-frequency
+  columns. `risk_state_table` / `trend_state_table` / `joint_state_table` gain skewness and
+  up-frequency and, with a benchmark, the active mean. No label or number changes.
+
 ## 0.8.0 — 2026-09-02 — Combining the risk and trend indicators (fork: as-wpi/paris)
 
 ### Added

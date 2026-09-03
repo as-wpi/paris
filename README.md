@@ -65,6 +65,9 @@ r, t = paris.risk_states(d["SPY"], window=252), paris.trend_states(d["SPY"], win
 paris.combine_states(r, t, "graded")                # exposure 0 / ½ / 1 from the two binaries (also gate / and / or / cells)
 paris.joint_state_table(d["SPY"], risk_kwargs={"window": 252}, trend_kwargs={"window": 252})  # mean/vol in the four cells
 paris.joint_states(d["SPY"], features=("logvol", "slow", "fast"), n_states=4, window=252)      # one model, several features
+paris.state_table(d["SPY"], r, benchmark=d["FCNTX"], rf=0.02)  # the unified conditional table for any label series
+paris.state_transitions(r), paris.risk_signal(d["SPY"]), paris.risk_centers(d["SPY"], window=252)  # transitions, feature, fitted threshold
+paris.state_sizing(d["SPY"], r * 2 + t, refit="QE")   # causal per-state exposure (Sharpe-scaled, re-estimated each refit)
 paris.regime_runs(paris.momentum_states(d["SPY"]))  # contiguous spans (start, end, state, length) for a colour-coded ribbon
 ```
 

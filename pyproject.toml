@@ -1,6 +1,6 @@
 [project]
 name = "paris-analytics"
-version = "0.8.0"
+version = "0.9.0"
 description = "PARIS — Portfolio Analytics, Risk & Investment Statistics: performance statistics for fund returns, absolute and relative to a benchmark."
 readme = "README.md"
 requires-python = ">=3.11"
