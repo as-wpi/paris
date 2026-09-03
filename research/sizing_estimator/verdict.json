@@ -1,0 +1,8 @@
+{
+  "P1 1x E1 Yang-Zhang 21": "RETIRE",
+  "P1 1x E2 Parkinson EWMA": "RETIRE",
+  "P1 1x E3 K-ATR fast": "RETIRE",
+  "P2 3x E1 Yang-Zhang 21": "RETIRE",
+  "P2 3x E2 Parkinson EWMA": "RETIRE",
+  "P2 3x E3 K-ATR fast": "RETIRE"
+}

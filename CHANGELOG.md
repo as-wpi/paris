@@ -22,6 +22,12 @@ under **Changed**.
   MaxDD clause, beats the stack 8/8 on Sharpe in substance; stage 2 four RETIREs; trend strength ≡
   LLT drift under standardisation (constant steady-state slope variance). `research/fetch_fmp.py`
   fetches the dividend-adjusted OHLC cache (git-ignored).
+- `research/calibration_memory.py`: rolling 1,260-day vs expanding calibration, pre-registered;
+  both RETIRE (expanding cures window anchoring but exits later in bears; trend Martin −0.17, CI
+  excludes 0). `research/sizing_estimator.py`: EWMA vs Yang–Zhang, Parkinson EWMA and the
+  screener's K-ATR inside the vol-target loop on 1x and 3x panels; EWMA best tracker 15/15, all
+  three RETIRE. Design decision recorded: the risk model is a diagnostic, not a gate; volatility
+  enters through sizing.
 
 ## 0.9.0 — 2026-09-03 — Parity for the jump-model regimes: tables, signals, fitted centres, causal sizing (fork: as-wpi/paris)
 
