@@ -42,10 +42,14 @@ from paris._core import AlignmentError, align, prepare, resolve_periods, to_fram
 from paris.regimes import _lookbacks, _signal_frame, _trailing
 
 __all__ = [
+    "combine_states",
+    "joint_state_table",
+    "joint_states",
     "jump_labels",
     "jump_states",
     "risk_state_table",
     "risk_states",
+    "state_table",
     "trend_state_table",
     "trend_states",
 ]
@@ -492,3 +496,154 @@ def trend_state_table(returns: Any, basis: str = "raw", rf: Any = None, benchmar
     tables = {c: _binary_table(st[c], p.returns[c], bench, p.ppy, ("Trend-off", "Trend-on"))
               for c in p.returns.columns}
     return _long(tables, p.multi)
+
+
+# --------------------------------------------------------------------------- combinations
+_COMBINE = ("graded", "gate", "and", "or", "cells")
+
+
+def combine_states(risk: Any, trend: Any, method: str = "graded", cells: dict | None = None) -> Any:
+    """Exposure in [0, 1] from the risk-on/off and trend-on/off binaries (aligned; NaN where either
+    is NaN). ``"graded"``: ``(risk + trend) / 2``; ``"gate"``: ``trend * (1/2 + risk/2)`` (trend
+    gates, risk sizes); ``"and"``: both on; ``"or"``: either on; ``"cells"``: an explicit exposure per
+    joint cell, ``cells={(risk, trend): exposure}`` with all four keys — the hook for
+    state-conditional sizing estimated elsewhere. Two Series give a Series; two DataFrames with the
+    same columns give a DataFrame."""
+    if method not in _COMBINE:
+        raise ValueError(f"method must be one of {_COMBINE}")
+    r, t = risk, trend
+    if isinstance(r, pd.DataFrame) != isinstance(t, pd.DataFrame):
+        raise AlignmentError("risk and trend must both be Series or both be DataFrames")
+    if isinstance(r, pd.DataFrame) and list(r.columns) != list(t.columns):
+        raise AlignmentError("risk and trend DataFrames must have the same columns")
+    r, t = r.astype(float), t.astype(float).reindex(r.index)
+    if method == "cells":
+        if cells is None or set(cells) != {(0, 0), (0, 1), (1, 0), (1, 1)}:
+            raise ValueError("cells needs exposures for the four keys (0,0), (0,1), (1,0), (1,1)")
+        for v in cells.values():
+            if not 0 <= float(v) <= 1:
+                raise ValueError("cell exposures must lie in [0, 1]")
+        code = r * 2 + t
+        lut = {2 * a + b: float(v) for (a, b), v in cells.items()}
+        out = code.replace(lut) if isinstance(code, pd.Series) else code.apply(lambda s: s.replace(lut))
+    elif method == "graded":
+        out = (r + t) / 2
+    elif method == "gate":
+        out = t * (0.5 + 0.5 * r)
+    elif method == "and":
+        out = r * t
+    else:
+        out = np.maximum(r, t)
+    return out.where(r.notna() & t.notna())
+
+
+def state_table(returns: Any, states: Any, benchmark: Any = None, periods_per_year: int | None = None,
+                labels: dict | None = None) -> pd.DataFrame:
+    """Count, frequency and the annualised arithmetic mean and volatility of the fund's return (and
+    the benchmark's) over the periods carrying each value of ``states`` (any label or code series,
+    already aligned in time with ``returns``; ``labels`` renames the values). Rows = state values
+    in sorted order; a DataFrame of returns with a DataFrame of states (same columns) gives one
+    long table with a leading ``fund`` column."""
+    p = prepare(returns, benchmark=benchmark, periods_per_year=periods_per_year)
+    st = states.to_frame() if isinstance(states, pd.Series) else states
+    if not isinstance(st, pd.DataFrame):
+        raise ValueError("states must be a Series or DataFrame")
+    if st.shape[1] == 1 and p.returns.shape[1] > 1:
+        st = pd.DataFrame({c: st.iloc[:, 0] for c in p.returns.columns})
+    if list(st.columns) != list(p.returns.columns):
+        st = st.set_axis(p.returns.columns, axis=1) if st.shape[1] == p.returns.shape[1] else st
+    if list(st.columns) != list(p.returns.columns):
+        raise AlignmentError("states must have one column per fund")
+
+    def one(c: str) -> pd.DataFrame:
+        s = st[c].reindex(p.returns.index)
+        keep = s.notna()
+        s, r = s[keep], p.returns[c][keep]
+        b = p.benchmark[keep] if p.benchmark is not None else None
+        values = sorted(pd.unique(s))
+        rows = {}
+        for v in values:
+            m = (s == v).to_numpy()
+            x = r[m]
+            row = {"count": float(m.sum()), "frequency": m.mean(),
+                   "own mean (ann.)": float(x.mean() * p.ppy) if len(x) else float("nan"),
+                   "own vol (ann.)": float(x.std(ddof=1) * np.sqrt(p.ppy)) if len(x) > 1 else float("nan")}
+            if b is not None:
+                y = b[m]
+                row["benchmark mean (ann.)"] = float(y.mean() * p.ppy) if len(y) else float("nan")
+                row["benchmark vol (ann.)"] = float(y.std(ddof=1) * np.sqrt(p.ppy)) if len(y) > 1 else float("nan")
+            rows[labels.get(v, v) if labels else v] = row
+        out = pd.DataFrame(rows).T
+        out.index.name = "state"
+        return out
+
+    return _long({c: one(c) for c in p.returns.columns}, p.multi)
+
+
+_JOINT_LABELS = {0: "Risk-off & Trend-off", 1: "Risk-off & Trend-on", 2: "Risk-on & Trend-off",
+                 3: "Risk-on & Trend-on"}
+
+
+def joint_state_table(returns: Any, benchmark: Any = None, risk_kwargs: dict | None = None,
+                      trend_kwargs: dict | None = None, periods_per_year: int | None = None) -> pd.DataFrame:
+    """The four joint cells of :func:`risk_states` × :func:`trend_states` (each with its own keyword
+    dict; ``window`` etc.), with count, frequency and the annualised mean and volatility of the
+    fund's (and the benchmark's) return in each cell — the evidence for how to combine the two."""
+    rk, tk = dict(risk_kwargs or {}), dict(trend_kwargs or {})
+    p = prepare(returns, benchmark=benchmark, periods_per_year=periods_per_year)
+    r = risk_states(p.returns, periods_per_year=p.ppy, **rk)
+    t = trend_states(p.returns, periods_per_year=p.ppy, **tk)
+    r = r.to_frame() if isinstance(r, pd.Series) else r
+    t = t.to_frame() if isinstance(t, pd.Series) else t
+    code = (r * 2 + t.reindex(r.index)).where(r.notna() & t.notna())
+    if not p.multi:  # a Series input keeps the wide layout (rows = cells), as every other table
+        return state_table(p.returns.iloc[:, 0], code.iloc[:, 0], benchmark=p.benchmark,
+                           periods_per_year=p.ppy, labels=_JOINT_LABELS)
+    return state_table(p.returns, code, benchmark=p.benchmark, periods_per_year=p.ppy, labels=_JOINT_LABELS)
+
+
+_JOINT_FEATURES = ("logvol", "slow", "fast")
+
+
+def joint_states(returns: Any, features: tuple[str, ...] = ("logvol", "slow"), n_states: int = 2,
+                 feature_weights: Any = None, basis: str = "raw", rf: Any = None, benchmark: Any = None,
+                 slow: int | None = None, fast: int | None = None, compound: bool = False,
+                 vol: str = "ewma", vol_lambda: float = 0.94, vol_window: int = 63, vol_warmup: int = 60,
+                 window: int = 1260, refit: str | None = "ME", jump_penalty: float = TREND_PENALTY,
+                 lookback: int | None = None, lag: int = 1, periods_per_year: int | None = None,
+                 n_init: int = 10, random_state: int = 0, clip: float | None = 3.0) -> Any:
+    """One jump model on several features at once — any ordered subset of ``("logvol", "slow",
+    "fast")``: the log volatility of :func:`risk_states` (own returns) and the trailing-mean signals
+    of :func:`trend_states` on ``basis``. Returns integer states ``0 .. n_states-1`` ordered by the
+    centre of the **first** feature (ascending: with ``"logvol"`` first, 0 is the calmest state;
+    with ``"slow"`` first, the highest state is the strongest trend). ``feature_weights`` scale the
+    standardised features. Same rolling calibration, online inference and ``lag`` conventions as
+    the binary indicators; NaN through the warm-up. Map states to exposure with :func:`state_table`.
+    """
+    if not features or any(f not in _JOINT_FEATURES for f in features) or len(set(features)) != len(features):
+        raise ValueError(f"features must be a non-repeating subset of {_JOINT_FEATURES}")
+    if not isinstance(lag, (int, np.integer)) or lag < 0:
+        raise ValueError("lag must be a nonnegative integer")
+    w = None
+    if feature_weights is not None:
+        w = np.asarray(feature_weights, dtype=float).ravel()
+        if len(w) != len(features) or (w <= 0).any():
+            raise ValueError("feature_weights must be positive and match features")
+    p, sig = _signal_frame(returns, basis, rf, benchmark, periods_per_year)
+    k_slow, k_fast = _lookbacks(p.ppy, slow, fast)
+    trail = {"slow": _trailing(sig, k_slow, compound), "fast": _trailing(sig, k_fast, compound)}
+
+    def states(c: str) -> pd.Series:
+        cols = {}
+        for f in features:
+            cols[f] = _log_vol(p.returns[c], vol, vol_lambda, vol_window, vol_warmup, p.ppy) if f == "logvol" else trail[f][c]
+        feat = pd.DataFrame(cols).dropna()
+        if w is not None:
+            feat = _weighted_features(feat, w)
+        s = jump_states(feat, jump_penalty, window, refit, n_states, lookback, n_init, random_state,
+                        None if w is not None else clip)
+        s = s.reindex(p.returns.index)
+        return s.shift(lag) if lag else s
+
+    out = pd.DataFrame({c: states(c) for c in p.returns.columns})
+    return out if p.multi else out.iloc[:, 0]

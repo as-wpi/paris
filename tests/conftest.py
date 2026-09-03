@@ -54,6 +54,10 @@ def build_inputs() -> dict[str, Any]:
         "daily_signals": daily_signals,
         "states_fcntx": paris.momentum_states(m["FCNTX"]),
         "states_funds": paris.momentum_states(funds),
+        "risk_spx": paris.risk_states(daily["SPY"], window=252),
+        "trend_spx": paris.trend_states(daily["SPY"], window=252),
+        "risk_daily": paris.risk_states(daily, window=252),
+        "trend_daily": paris.trend_states(daily, window=252),
     }
 
 

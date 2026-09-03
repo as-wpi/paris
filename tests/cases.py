@@ -718,6 +718,49 @@ _add(
     },
 )
 
+# ----------------------------------------------------------------------------- jump (0.8.0)
+RS, TS = In("risk_spx"), In("trend_spx")
+_add(
+    "combine_states",
+    {
+        "default": ((RS, TS), {}),
+        "gate": ((RS, TS), {"method": "gate"}),
+        "and": ((RS, TS), {"method": "and"}),
+        "or": ((RS, TS), {"method": "or"}),
+        "cells": ((RS, TS), {"method": "cells", "cells": {(0, 0): 0.0, (0, 1): 1.0, (1, 0): 0.5, (1, 1): 1.0}}),
+        "frames": ((In("risk_daily"), In("trend_daily")), {}),
+    },
+)
+_add(
+    "state_table",
+    {
+        "default": ((DSPX, RS), {}),
+        "benchmark": ((DFC, TS), {"benchmark": DSPX}),
+        "labels": ((DSPX, RS), {"labels": {0.0: "off", 1.0: "on"}}),
+        "frame": ((DAILY, In("risk_daily")), {}),
+        "broadcast": ((DAILY, RS), {}),
+    },
+)
+_add(
+    "joint_state_table",
+    {
+        "default": ((DSPX,), {"risk_kwargs": W, "trend_kwargs": W}),
+        "benchmark": ((DFC,), {"benchmark": DSPX, "risk_kwargs": W, "trend_kwargs": W}),
+        "frame": ((DAILY,), {"risk_kwargs": W, "trend_kwargs": W}),
+    },
+)
+_add(
+    "joint_states",
+    {
+        "default": ((DSPX,), W),
+        "three_features": ((DSPX,), {"features": ("logvol", "slow", "fast"), "window": 252}),
+        "four_states": ((DSPX,), {"features": ("logvol", "slow", "fast"), "n_states": 4, "window": 252}),
+        "slow_first_weights": ((DSPX,), {"features": ("slow", "logvol"), "feature_weights": [1.0, 0.5], "window": 252}),
+        "relative_lag0": ((DFC,), {"basis": "relative", "lag": 0, "window": 252}),
+        "frame": ((DAILY,), W),
+    },
+)
+
 _ids = [c.id for c in CASES]
 assert len(_ids) == len(set(_ids)), "duplicate case ids"
 BY_MODULE: dict[str, list[Case]] = {}

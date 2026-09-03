@@ -175,3 +175,81 @@ def test_window_longer_than_history_is_an_alignment_error(spy, logvol):
     with pytest.raises(AlignmentError):
         paris.risk_states(spy, window=len(spy))
     assert isinstance(paris.jump_states(logvol.to_numpy(), 20.0, window=252, refit=None), pd.Series)
+
+
+# ------------------------------------------------------------------ 0.8.0: combinations & joint models
+def test_combine_states_identities(spy):
+    r, t = paris.risk_states(spy, **W), paris.trend_states(spy, **W)
+    g = paris.combine_states(r, t)
+    assert g.isna().equals(r.isna() | t.isna()) and set(g.dropna().unique()) <= {0.0, 0.5, 1.0}
+    pd.testing.assert_series_equal(g, (r + t) / 2, check_names=False)
+    pd.testing.assert_series_equal(paris.combine_states(r, t, "gate"), t * (0.5 + 0.5 * r), check_names=False)
+    pd.testing.assert_series_equal(paris.combine_states(r, t, "and"), r * t, check_names=False)
+    pd.testing.assert_series_equal(paris.combine_states(r, t, "or"), np.maximum(r, t), check_names=False)
+    cells = {(0, 0): 0.0, (0, 1): 1.0, (1, 0): 0.5, (1, 1): 1.0}
+    c = paris.combine_states(r, t, "cells", cells=cells)
+    m = (r == 1) & (t == 0)
+    assert (c[m] == 0.5).all() and (c[(r == 0) & (t == 1)] == 1.0).all()
+    # DataFrames with the same columns
+    daily = paris.data.load_prices().pct_change().dropna()
+    R, T = paris.risk_states(daily, **W), paris.trend_states(daily, **W)
+    G = paris.combine_states(R, T)
+    assert list(G.columns) == list(daily.columns)
+    pd.testing.assert_series_equal(G["SPY"], g, check_names=False)
+
+
+def test_state_table_and_joint_cells(daily, spy):
+    r, t = paris.risk_states(spy, **W), paris.trend_states(spy, **W)
+    st = paris.state_table(spy, r)
+    assert list(st.index) == [0.0, 1.0] and st["count"].sum() == r.notna().sum()
+    np.testing.assert_allclose(st.loc[1.0, "own mean (ann.)"], spy[r == 1].mean() * 252)
+    lab = paris.state_table(spy, r, labels={0.0: "off", 1.0: "on"})
+    assert list(lab.index) == ["off", "on"]
+    jt = paris.joint_state_table(spy, risk_kwargs=W, trend_kwargs=W)
+    assert list(jt.index) == ["Risk-off & Trend-off", "Risk-off & Trend-on", "Risk-on & Trend-off", "Risk-on & Trend-on"]
+    assert jt["count"].sum() == (r.notna() & t.notna()).sum()
+    both = (r == 1) & (t == 1)
+    np.testing.assert_allclose(jt.loc["Risk-on & Trend-on", "own mean (ann.)"], spy[both].mean() * 252)
+    jb = paris.joint_state_table(daily["FCNTX"], benchmark=spy, risk_kwargs=W, trend_kwargs=W)
+    assert "benchmark mean (ann.)" in jb.columns
+    long = paris.state_table(daily, paris.risk_states(daily, **W))
+    assert list(long.columns)[:2] == ["fund", "state"] and len(long) == 4
+
+
+def test_joint_states_conventions(spy):
+    j2 = paris.joint_states(spy, **W)
+    assert set(j2.dropna().unique()) <= {0.0, 1.0}
+    lv = _log_vol(spy, "ewma", 0.94, 63, 60, 252)
+    assert lv[j2 == 0].mean() < lv[j2 == 1].mean()  # logvol first: state 0 is the calm one
+    j4 = paris.joint_states(spy, features=("logvol", "slow", "fast"), n_states=4, **W)
+    assert set(j4.dropna().unique()) <= {0.0, 1.0, 2.0, 3.0}
+    js = paris.joint_states(spy, features=("slow", "logvol"), lag=0, **W)
+    slow = paris.momentum_signal(spy)
+    assert slow[js == 1].mean() > slow[js == 0].mean()  # slow first: high state is the trend
+    # causal like the binaries
+    assert j2.loc[:"2024-06-28"].equals(paris.joint_states(spy.loc[:"2024-06-28"], **W))
+    assert paris.joint_states(spy, lag=0, **W).shift(1).equals(j2)
+
+
+@pytest.mark.parametrize(
+    "call",
+    [
+        lambda r, f: paris.combine_states(paris.risk_states(r, **W), paris.trend_states(r, **W), "xor"),
+        lambda r, f: paris.combine_states(paris.risk_states(r, **W), paris.trend_states(r, **W), "cells"),
+        lambda r, f: paris.combine_states(paris.risk_states(r, **W), paris.trend_states(r, **W), "cells",
+                                          cells={(0, 0): 0, (0, 1): 2, (1, 0): 0, (1, 1): 1}),
+        lambda r, f: paris.joint_states(r, features=("logvol", "vix"), **W),
+        lambda r, f: paris.joint_states(r, feature_weights=[1.0], **W),
+        lambda r, f: paris.state_table(r, "on"),
+    ],
+)
+def test_combination_switches_raise_value_error(call, spy, logvol):
+    with pytest.raises(ValueError):
+        call(spy, logvol)
+
+
+def test_combination_alignment_errors(daily, spy):
+    with pytest.raises(AlignmentError):
+        paris.combine_states(paris.risk_states(daily, **W), paris.trend_states(spy, **W))
+    with pytest.raises(AlignmentError):
+        paris.state_table(daily, pd.DataFrame({"A": paris.risk_states(spy, **W), "B": 0.0, "C": 0.0}))
