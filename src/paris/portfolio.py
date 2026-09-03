@@ -4,10 +4,10 @@ from __future__ import annotations
 from functools import partial
 from typing import Any
 
-from paris import attribution, budgeting, drawdown, ratios, regimes, relative, returns, risk, tables
+from paris import attribution, budgeting, drawdown, jump, ratios, regimes, relative, returns, risk, tables
 from paris.summary import stats
 
-_MODULES = (returns, risk, drawdown, ratios, relative, tables, regimes)
+_MODULES = (returns, risk, drawdown, ratios, relative, tables, regimes, jump)
 
 
 class Portfolio:

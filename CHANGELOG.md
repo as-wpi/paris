@@ -8,11 +8,45 @@ under **Changed**.
 ## 0.7.0 — Unreleased — Jump-model risk-on/off and trend-on/off indicators (fork: as-wpi/paris)
 
 ### Added
+- `jump`: a pure numpy statistical jump model (Nystrup, Lindström & Madsen 2020) with the loss and
+  penalty conventions of the reference `jumpmodels` package, against which the test suite checks
+  fit and online inference exactly (`uv sync --group oracle`). `jump_labels` is the hindsight
+  path; `jump_states` is the causal indicator: rolling calibration (`window` observations before
+  each refit date, `refit="ME"` by default), online forward-DP inference over a `lookback`
+  window, training-window standardisation and clipping.
+- `risk_states` / `risk_state_table`: risk-on (1) / risk-off (0) from a one-feature jump model on
+  log volatility — the RiskMetrics EWMA (λ = 0.94, 60-observation warm-up) of daily log returns by
+  default, or a rolling sample sd — on the series' own returns (`basis="own"`) or the benchmark's
+  (`basis="benchmark"`, bundled S&P 500 proxy by default). Low volatility is risk-on. The value for
+  day *T* is the online state at *T-1* (`lag=1`). The table reports count, frequency and the
+  annualised arithmetic mean and volatility of the labelled periods, for the fund and — with the
+  benchmark basis — for the benchmark.
+- `trend_states` / `trend_state_table`: trend-on (1) / trend-off (0) from a jump model on the
+  momentum turning-point signals (`("slow", "fast")` by default, `("slow",)` for the slow signal
+  alone; `feature_weights`), on a raw, excess or relative basis; the high slow-signal state is
+  trend-on. Same calibration, inference and lag conventions.
 - `momentum_conditional_table`: by momentum state at *t*, the annualised arithmetic mean of the
   return at *t+1* of the fund, the benchmark and the active return (and the excess versions with
   `rf`) side by side.
 - `regime_runs`: contiguous runs (`start`, `end`, `state`, `length`) of any label series — the
   input to a colour-coded regime ribbon; README shows the matplotlib recipe.
+
+### Conventions
+- Every jump-model indicator is causal: nothing after *T-1* enters the value reported for *T*; the
+  test suite asserts that truncating the history leaves earlier labels unchanged. Warm-up
+  (feature warm-up + `window` + `lag`) is NaN.
+- Default penalties were sized on the daily US market factor (Fama–French, 1992–2026; 1,260-day
+  window, monthly refit, `lag=1`, 0/1 strategy in cash when off, evaluated in sample over a
+  five-value grid — a sizing, not a validation). Risk (`RISK_PENALTY = 50`): the EWMA log-vol
+  feature is smooth, so switches are ~1/yr even at λ = 5; from λ = 50 the low-vol state carries the
+  higher arithmetic mean (12.9 % vs 11.2 % ann.), the 0/1 strategy's Sharpe is 0.59 vs 0.53
+  buy-and-hold and its max drawdown −21 % vs −55 %. Below 50 the high-vol state has the *higher*
+  mean (V-shaped recoveries) and the 0/1 Sharpe is below buy-and-hold, though drawdowns still
+  halve — a risk gate, not an alpha signal. Trend (`TREND_PENALTY = 5`): the slow/fast features
+  are persistent themselves, so the lightest penalty on the grid wins — 0/1 Sharpe 0.75 vs 0.60 for
+  the raw 252-day sign on the same series and 0.52 buy-and-hold, max drawdown −20 % vs −28 %, 1.9 vs
+  2.6 switches/yr, on-state mean 15.5 % vs 5.3 % off; the slow signal alone reaches 0.69. Both
+  defaults are exposed as `jump_penalty`; re-size them for other assets or frequencies.
 
 ## 0.6.0 — 2026-09-02 — Regimes, drawdown distributions, Kelly and deflated Sharpe (fork: as-wpi/paris)
 

@@ -29,6 +29,12 @@ def build_inputs() -> dict[str, Any]:
     )
     sleeves = funds[["FCNTX", "DODGX"]].set_axis(["Growth", "Value"], axis=1)
     style = m[["IWF", "IWD"]].set_axis(["Growth", "Value"], axis=1)
+    from paris.jump import _log_vol  # feature inputs for the jump-model cases
+
+    daily_logvol = _log_vol(daily["SPY"], "ewma", 0.94, 63, 60, 252).dropna().rename("logvol")
+    daily_signals = pd.DataFrame(
+        {"slow": paris.momentum_signal(daily["SPY"]), "fast": paris.momentum_signal(daily["SPY"], "fast")}
+    ).dropna()
     return {
         "m": m,
         "funds": funds,
@@ -44,6 +50,8 @@ def build_inputs() -> dict[str, Any]:
         "sleeves": sleeves,
         "style": style,
         "contrib": paris.contribution(funds, W6),
+        "daily_logvol": daily_logvol,
+        "daily_signals": daily_signals,
         "states_fcntx": paris.momentum_states(m["FCNTX"]),
         "states_funds": paris.momentum_states(funds),
     }

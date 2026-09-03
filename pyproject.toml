@@ -48,6 +48,9 @@ packages = ["src/paris"]
 
 [dependency-groups]
 dev = ["pytest>=8"]
+oracle = [
+    "jumpmodels>=0.1.1",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

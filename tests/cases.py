@@ -650,6 +650,74 @@ _add(
 )
 _add("regime_runs", {"series": ((In("states_fcntx"),), {}), "frame": ((In("states_funds"),), {})})
 
+# ----------------------------------------------------------------------------- jump (0.7.0)
+LOGVOL, SIGNALS, DFC, DSPX = In("daily_logvol"), In("daily_signals"), In("daily_fcntx"), In("daily_spx")
+W = {"window": 252}
+_add(
+    "jump_labels",
+    {
+        "default": ((LOGVOL, 20.0), {}),
+        "lam5": ((LOGVOL, 5.0), {}),
+        "two_features": ((SIGNALS, 20.0), {}),
+        "no_clip": ((LOGVOL, 20.0), {"clip": None}),
+        "three_states": ((LOGVOL, 20.0), {"n_states": 3}),
+    },
+)
+_add(
+    "jump_states",
+    {
+        "default": ((LOGVOL, 20.0), W),
+        "quarterly": ((LOGVOL, 20.0), {"window": 252, "refit": "QE"}),
+        "single_fit": ((LOGVOL, 20.0), {"window": 252, "refit": None}),
+        "lookback126": ((LOGVOL, 20.0), {"window": 252, "lookback": 126}),
+        "two_features": ((SIGNALS, 20.0), W),
+        "lam50_window504": ((LOGVOL, 50.0), {"window": 504}),
+    },
+)
+_add(
+    "risk_states",
+    {
+        "default": ((DAILY,), W),
+        "series": ((DFC,), W),
+        "benchmark_default_spx": ((DFC,), {"basis": "benchmark", "window": 252}),
+        "benchmark_given": ((DAILY,), {"basis": "benchmark", "benchmark": DSPX, "window": 252}),
+        "rolling63": ((DSPX,), {"vol": "rolling", "window": 252}),
+        "lag0_lam10": ((DSPX,), {"lag": 0, "jump_penalty": 10.0, "window": 252}),
+        "lookback126_quarterly": ((DSPX,), {"window": 252, "lookback": 126, "refit": "QE"}),
+    },
+)
+_add(
+    "trend_states",
+    {
+        "default": ((DAILY,), W),
+        "series": ((DSPX,), W),
+        "slow_only": ((DSPX,), {"features": ("slow",), "window": 252}),
+        "weights": ((DSPX,), {"feature_weights": [1.0, 0.5], "window": 252}),
+        "excess_rf_scalar": ((DSPX,), {"basis": "excess", "rf": 0.02, "window": 252}),
+        "relative_default_spx": ((DFC,), {"basis": "relative", "window": 252}),
+        "compound_lag0": ((DSPX,), {"compound": True, "lag": 0, "window": 252}),
+    },
+)
+_add(
+    "risk_state_table",
+    {
+        "default": ((DAILY,), W),
+        "series": ((DSPX,), W),
+        "benchmark_default_spx": ((DFC,), {"basis": "benchmark", "window": 252}),
+        "benchmark_given": ((DAILY,), {"basis": "benchmark", "benchmark": DSPX, "window": 252}),
+    },
+)
+_add(
+    "trend_state_table",
+    {
+        "default": ((DAILY,), W),
+        "series": ((DSPX,), W),
+        "relative_default_spx": ((DFC,), {"basis": "relative", "window": 252}),
+        "benchmark_given": ((DFC,), {"benchmark": DSPX, "window": 252}),
+        "slow_only": ((DAILY,), {"features": ("slow",), "window": 252}),
+    },
+)
+
 _ids = [c.id for c in CASES]
 assert len(_ids) == len(set(_ids)), "duplicate case ids"
 BY_MODULE: dict[str, list[Case]] = {}
