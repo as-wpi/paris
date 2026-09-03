@@ -1,0 +1,53 @@
+{
+  "title": "PARIS jump-model regimes vs the frozen rtl-screener two-term rule; LLT features as jump-model inputs",
+  "status": "FROZEN 2026-09-03 before any run",
+  "authority": "User decision 2026-09-03; constitutional amendment recorded in rtl-screener/research/llt_bakeoff/reports/llt_hysteresis_deadband.md (AMENDMENT 2026-09-03)",
+  "universe": ["SPY", "QQQ", "XLK", "IWM", "EFA", "EEM", "TLT", "GLD"],
+  "data": "FMP dividend-adjusted daily OHLC (stable/historical-price-eod/dividend-adjusted); cash = Fama-French daily RF through 2026-06-30 then FMP 3M CMT/252 lagged one day",
+  "execution": {"convention": "exposure for day T fixed from information <= close T-1 (PARIS lag=1; screener features computed at close T-1)", "cost_one_way": 0.0010, "cash": "T-bill"},
+  "market_proxy": "SPY (S1 rule computed on SPY; aligned to each ticker's calendar by causal forward-fill)",
+  "frozen_incumbent": {
+    "S1": "risk_off = trend_strength < 0 OR PR63(fit_quality) > 0.85 on SPY (rtl_snapshot.market_risk_off / regime_study._risk_off)",
+    "S2": "own x_raw > 0 (EWMA channel, gated_strategy.base_exposure)",
+    "S3": "own risk_innov_raw <= 1.25 (gated_strategy.innov_risk_gated_exposure)",
+    "stack": "S1 x S2 x S3 (gated_strategy.stack_exposure)",
+    "engine": "RTL-Kalman RTLEKOscillators with rtl_snapshot.DEFAULT_RTL_CONFIG; PR63 via rtl_snapshot._rolling_pr; cross-checked against build_rtl_snapshot on SPY"
+  },
+  "challengers_stage1": ["PARIS trend λ=5 (own slow+fast)", "PARIS risk λ=50 (own log EWMA vol)", "PARIS gate = trend x (1/2 + 1/2 risk)", "PARIS graded"],
+  "exploratory_stage1": ["PARIS trend λ=5 x frozen S1 (not a promotion candidate; attribution only)"],
+  "stage2_feature_tests": [
+    {"id": "F1", "model": "risk", "features": ["log EWMA vol (level)", "log fit_quality"], "penalty": 50},
+    {"id": "F2", "model": "risk", "features": ["log EWMA vol (level)", "log risk_innov_raw (InnovLMAR)"], "penalty": 50},
+    {"id": "T1", "model": "trend", "features": ["slow trailing mean (level)", "x_raw_llt (LLT drift)"], "penalty": 5},
+    {"id": "T2", "model": "trend", "features": ["slow trailing mean (level)", "trend_strength (LLT slope t-stat)"], "penalty": 5}
+  ],
+  "stage2_rule": "one feature per test, beside the level feature, equal standardised weights inside each rolling window; each test is judged against BOTH the frozen stack and the untouched PARIS model of the same side (risk λ=50 / trend λ=5) on the same metrics; default RETIRE",
+  "folds": {
+    "bear_mandatory": {
+      "E_bear_2018q4": ["2018-09-01", "2019-02-28"],
+      "X_2020_covid": ["2020-02-01", "2020-12-31"],
+      "B_bear_2022": ["2022-01-01", "2022-12-31"]
+    },
+    "bull": {
+      "K_bull_2013_14": ["2013-01-01", "2014-12-31"],
+      "A_bull_2021": ["2021-01-01", "2021-12-31"],
+      "C_mixed_2023_24": ["2023-01-01", "2024-12-31"],
+      "D_recent_2025plus": ["2025-01-01", "2099-12-31"]
+    },
+    "full_oos": "from the first date on which every arm is valid for that ticker (PARIS warm-up 1,260 days + 60) to the last available bar"
+  },
+  "metrics": ["Sharpe (vs T-bill)", "MaxDD", "Martin", "Ulcer", "CAGR", "time in market", "flips per year (count of exposure changes)", "off-fraction = 1 - mean exposure"],
+  "false_bear_ceiling": {
+    "definition": "in each bull fold, the challenger's cross-ticker median off-fraction must be <= the frozen stack's median off-fraction + 0.10 AND <= 0.35",
+    "why": "D1b-X labelled 39-44% of calm periods bear; nothing in the program froze a numeric ceiling before this spec"
+  },
+  "decision_rule": {
+    "comparator": "frozen S1 x S2 x S3 stack (primary); S2 alone (secondary, like-for-like own-trend rule)",
+    "MATCHES": "median full-OOS ΔSharpe >= -0.05 AND in every mandatory bear fold median MaxDD >= stack MaxDD - 0.01 AND false-bear ceiling passes in every bull fold",
+    "BEATS": "MATCHES AND median full-OOS ΔSharpe >= +0.10 AND median ΔMartin > 0",
+    "LOSES": "otherwise",
+    "attribution_if_loses": "if the deficit is concentrated in the mandatory bear folds (stack exits earlier) -> stress detection (fit quality, F1) is the first addition; if concentrated in the ex-US names (EFA, EEM, TLT, GLD) -> volatility measurement (range-based vol, B1) is; both -> F1 first per the amendment order",
+    "uncertainty": "paired ticker bootstrap (1,000 draws) 95% CI of the median ΔSharpe; reported, not a gate (n = 8 tickers)"
+  },
+  "not_tested_here": ["annual re-selection (killed 2026-09-02)", "rank-encoded LLT features as sole inputs (D1b-X binding)", "new threshold/hysteresis rules on LLT signals (stopping rule stands)"]
+}

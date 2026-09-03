@@ -5,6 +5,17 @@ All notable changes to PARIS are recorded here, one section per release. Version
 are never changed silently: a change to a default convention is a breaking change and is listed
 under **Changed**.
 
+## Unreleased
+
+### Research (no library change)
+- `research/frozen_rule_benchmark.py` + `research/frozen_rule_benchmark/`: pre-registered benchmark of
+  the untouched PARIS regimes against the rtl-screener's frozen two-term rule and S1×S2×S3 stack on
+  SPY and seven 1× ETFs, plus the amended-in LLT signals (fit quality, InnovLMAR, LLT drift, trend
+  strength) as second jump-model features. Verdicts: stage 1 LOSES by the letter of a mis-specified
+  MaxDD clause, beats the stack 8/8 on Sharpe in substance; stage 2 four RETIREs; trend strength ≡
+  LLT drift under standardisation (constant steady-state slope variance). `research/fetch_fmp.py`
+  fetches the dividend-adjusted OHLC cache (git-ignored).
+
 ## 0.9.0 — 2026-09-03 — Parity for the jump-model regimes: tables, signals, fitted centres, causal sizing (fork: as-wpi/paris)
 
 ### Added

@@ -7,3 +7,5 @@ dist/
 .DS_Store
 .ruff_cache/
 NEXT_STEPS.local.md
+research/data_cache/
+research/frozen_rule_benchmark/*_exposures.csv
