@@ -34,7 +34,7 @@ from paris.risk import *
 from paris.summary import ABSOLUTE_METRICS, RELATIVE_METRICS, stats
 from paris.tables import *
 
-__version__ = "0.10.0"
+__version__ = "0.11.0"
 __all__ = (
     ["ParisError", "GapError", "FrequencyError", "AlignmentError", "Portfolio", "stats",
      "ABSOLUTE_METRICS", "RELATIVE_METRICS", "data", "__version__"]

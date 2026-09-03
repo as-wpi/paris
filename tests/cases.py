@@ -673,8 +673,19 @@ _add(
         "two_features": ((SIGNALS, 20.0), W),
         "lam50_window504": ((LOGVOL, 50.0), {"window": 504}),
         "expanding": ((LOGVOL, 20.0), {"window": 252, "calibration": "expanding"}),
+        "since": ((LOGVOL, 20.0), {"window": 252, "since": "2024-01-01"}),
     },
 )
+_add(
+    "jump_fits",
+    {
+        "default": ((LOGVOL, 20.0), W),
+        "two_features_weights": ((SIGNALS, 20.0), {"window": 252, "feature_weights": [1.0, 0.5]}),
+        "three_states_expanding": ((LOGVOL, 20.0), {"window": 252, "n_states": 3, "calibration": "expanding"}),
+    },
+)
+_add("risk_fits", {"default": ((DSPX,), W), "rolling_vol": ((DSPX,), {"vol": "rolling", "window": 252})})
+_add("trend_fits", {"default": ((DSPX,), W), "slow_only": ((DSPX,), {"features": ("slow",), "window": 252})})
 _add(
     "risk_states",
     {

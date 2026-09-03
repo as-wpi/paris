@@ -89,6 +89,24 @@ def test_expanding_calibration_is_causal_and_uses_all_history(spy, logvol):
         paris.jump_states(logvol, 20.0, window=252, calibration="forgetting")
 
 
+def test_fits_resume_and_since_reproduce_a_cold_run(spy, logvol):
+    cold = paris.trend_states(spy, **W)
+    partial = paris.trend_fits(spy.loc[:"2024-06-28"], **W)
+    warm = paris.trend_states(spy, fits=partial, **W)
+    assert cold.equals(warm)
+    full_fits = paris.trend_fits(spy, fits=partial, **W)
+    assert len(full_fits) > len(partial) and full_fits.iloc[: len(partial)].equals(partial)
+    tail = paris.trend_states(spy, fits=full_fits, since="2025-01-02", **W)
+    assert tail.loc[:"2025-01-01"].isna().all()
+    pd.testing.assert_series_equal(tail.loc["2025-01-02":], cold.loc["2025-01-02":])
+    r_cold = paris.risk_states(spy, **W)
+    assert r_cold.equals(paris.risk_states(spy, fits=paris.risk_fits(spy.loc[:"2024-06-28"], **W), **W))
+    js = paris.jump_states(logvol, 20.0, window=252)
+    assert js.equals(paris.jump_states(logvol, 20.0, window=252, fits=paris.jump_fits(logvol.iloc[:600], 20.0, window=252)))
+    with pytest.raises(ValueError):
+        paris.jump_states(logvol, 20.0, window=252, fits=paris.jump_fits(logvol, 20.0, window=252, n_states=3))
+
+
 def test_feature_weights_are_causal_and_effective(spy, logvol, inputs):
     # weights are applied inside every rolling window (no full-sample statistic): truncating the
     # history must leave earlier labels unchanged, exactly as without weights

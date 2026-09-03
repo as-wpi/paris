@@ -5,6 +5,30 @@ All notable changes to PARIS are recorded here, one section per release. Version
 are never changed silently: a change to a default convention is a breaking change and is listed
 under **Changed**.
 
+## 0.11.0 — 2026-09-03 — Stored fits and resumable inference for the jump models (fork: as-wpi/paris)
+
+### Added
+- `jump_fits` (and `risk_fits` / `trend_fits` for one series): the fitted model at every refit
+  date as a storable DataFrame — training scaler (`mu`, `sd` per feature) and centres in
+  standardised units. Pass it back as `fits=` to `jump_states` / `risk_states` / `trend_states`
+  on a longer history with the same arguments: stored refits are reused, new ones fitted, and
+  the result equals a cold run. `since=` restricts the online inference to observations at or
+  after a date (identical values; earlier NaN) — the daily-refresh path for a screener.
+  Golden cases `jump_fits/*`, `risk_fits/*`, `trend_fits/*`, `jump_states/since`; a resume test.
+
+### Changed
+- Every refit is now seeded by `(random_state, refit position)` instead of one generator
+  consumed across refits, so a resumed run can reproduce a cold run exactly. Defaults and
+  conventions are unchanged, but the best-of-`n_init` seeding differs per refit, and 41 of the
+  90 stored golden outputs on the small test inputs (252-day windows; risk-model and derived
+  tables) changed as a result. With production defaults (1,260-day windows, 10 restarts) the
+  change moves 12–39 trend state-days and 0–40 risk state-days per fund on the eight benchmark
+  ETFs (4,000–7,100 days each, i.e. under 1 %) — the best-of-10 tie-breaker landing on a
+  different local optimum at a few refits. The research record of 2026-09-03 was produced under
+  the old seeding and is not re-run; differences of this size do not touch any verdict.
+- The risk model's feature is now named `vol` (was the series name) so `risk_fits` output is
+  portable across series.
+
 ## 0.10.0 — 2026-09-03 — Expanding-window calibration; research sequence closes the regime-improvement thread (fork: as-wpi/paris)
 
 ### Added

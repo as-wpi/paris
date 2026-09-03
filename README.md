@@ -68,6 +68,8 @@ paris.joint_states(d["SPY"], features=("logvol", "slow", "fast"), n_states=4, wi
 paris.state_table(d["SPY"], r, benchmark=d["FCNTX"], rf=0.02)  # the unified conditional table for any label series
 paris.state_transitions(r), paris.risk_signal(d["SPY"]), paris.risk_centers(d["SPY"], window=252)  # transitions, feature, fitted threshold
 paris.trend_states(d["SPY"], window=252, calibration="expanding")  # centres from all history before each refit (window = minimum)
+f = paris.trend_fits(d["SPY"].loc[:"2024"], window=252)            # store the fits; resume later with fits= (identical to a cold run)
+paris.trend_states(d["SPY"], window=252, fits=f, since="2025-01-02")  # daily refresh: only the new bars are inferred
 paris.state_sizing(d["SPY"], r * 2 + t, refit="QE")   # causal per-state exposure (Sharpe-scaled, re-estimated each refit)
 paris.regime_runs(paris.momentum_states(d["SPY"]))  # contiguous spans (start, end, state, length) for a colour-coded ribbon
 ```

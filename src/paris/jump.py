@@ -50,9 +50,11 @@ __all__ = [
     "joint_state_table",
     "joint_states",
     "jump_centers",
+    "jump_fits",
     "jump_labels",
     "jump_states",
     "risk_centers",
+    "risk_fits",
     "risk_signal",
     "risk_state_table",
     "risk_states",
@@ -60,6 +62,7 @@ __all__ = [
     "state_table",
     "state_transitions",
     "trend_centers",
+    "trend_fits",
     "trend_signal",
     "trend_state_table",
     "trend_states",
@@ -290,7 +293,7 @@ def jump_labels(features: Any, jump_penalty: float, n_states: int = 2, n_init: i
 
 
 def _rolling_fits(features, jump_penalty, window, refit, n_states, lookback, n_init, random_state, clip,
-                  feature_weights, calibration="rolling"):
+                  feature_weights, calibration="rolling", fits=None):
     """Validate the inputs and fit the model at every refit date on the ``window`` observations
     before it (``calibration="rolling"``) or on all observations before it (``"expanding"``,
     ``window`` = minimum training length). Returns ``(frame, X, weights, lookback, [(start, mu, sd, centres), ...])``; the
@@ -322,14 +325,54 @@ def _rolling_fits(features, jump_penalty, window, refit, n_states, lookback, n_i
             raise ValueError("refit needs a DatetimeIndex; pass refit=None for a single fit")
         per = _periods(df.index, refit)
         refit_at = [window] + [i for i in range(window + 1, n) if per[i] != per[i - 1]]
-    rng = np.random.default_rng(random_state)
-    fits = []
+    prior = _unpack_fits(fits, df, n_states) if fits is not None else {}
+    out = []
     for start in refit_at:
+        key = df.index[start]
+        if key in prior:
+            out.append((start, *prior[key]))
+            continue
         train = X[start - window:start] if calibration == "rolling" else X[:start]
         mu, sd = _scaler(train)
         Zt = _standardise(train, mu, sd, clip)
-        fits.append((start, mu, sd, _fit(Zt if w is None else Zt * w, jump_penalty, n_states, n_init, rng)))
-    return df, X, w, int(lookback), fits
+        # one generator per refit date, seeded by (random_state, refit position): a run resumed from
+        # stored fits reproduces a cold run exactly
+        rng = np.random.default_rng([int(random_state), int(start)])
+        out.append((start, mu, sd, _fit(Zt if w is None else Zt * w, jump_penalty, n_states, n_init, rng)))
+    return df, X, w, int(lookback), out
+
+
+def _pack_fits(df: pd.DataFrame, fits: list, n_states: int) -> pd.DataFrame:
+    rows = {}
+    for start, mu, sd, centers in fits:
+        row = {}
+        for i, f in enumerate(df.columns):
+            row[f"mu {f}"] = float(mu[i])
+            row[f"sd {f}"] = float(sd[i])
+            for k in range(n_states):
+                row[f"state{k} {f}"] = float(centers[k, i])
+        rows[df.index[start]] = row
+    out = pd.DataFrame(rows).T
+    out.index.name = "refit"
+    return out
+
+
+def _unpack_fits(fits: pd.DataFrame, df: pd.DataFrame, n_states: int) -> dict:
+    if not isinstance(fits, pd.DataFrame):
+        raise ValueError("fits must be the DataFrame returned by jump_fits")
+    p = len(df.columns)
+    need = [f"{pre} {f}" for f in df.columns for pre in ("mu", "sd")] + [f"state{k} {f}" for k in range(n_states) for f in df.columns]
+    missing = [c for c in need if c not in fits.columns]
+    extra = [c for c in fits.columns if c.startswith("state") and int(c.split(" ", 1)[0][5:]) >= n_states]
+    if missing or extra:
+        raise ValueError(f"fits do not match the features / n_states: missing {missing[:3]}, extra {extra[:3]}")
+    out = {}
+    for ts, row in fits.iterrows():
+        mu = np.array([row[f"mu {f}"] for f in df.columns], dtype=float)
+        sd = np.array([row[f"sd {f}"] for f in df.columns], dtype=float)
+        centers = np.array([[row[f"state{k} {f}"] for f in df.columns] for k in range(n_states)], dtype=float).reshape(n_states, p)
+        out[pd.Timestamp(ts)] = (mu, sd, centers)
+    return out
 
 
 def jump_centers(features: Any, jump_penalty: float, window: int = 1260, refit: str | None = "ME",
@@ -356,9 +399,26 @@ def jump_centers(features: Any, jump_penalty: float, window: int = 1260, refit: 
     return out
 
 
+def jump_fits(features: Any, jump_penalty: float, window: int = 1260, refit: str | None = "ME",
+              n_states: int = 2, n_init: int = 10, random_state: int = 0, clip: float | None = 3.0,
+              feature_weights: Any = None, calibration: str = "rolling", fits: pd.DataFrame | None = None) -> pd.DataFrame:
+    """The fitted model at every refit date, in a form that can be stored and resumed: one row per
+    refit (indexed by the first date the fit applies to) with the training scaler (``mu <feature>``,
+    ``sd <feature>``) and the centres in standardised, weighted units (``state<k> <feature>``).
+    Pass the result back as ``fits`` to :func:`jump_states` or :func:`jump_fits` on a longer history
+    with the SAME arguments: refits already present are reused and only new refit dates are fitted,
+    and the result is identical to a cold run (each refit is seeded by ``(random_state, position)``).
+    Mismatched arguments are the caller's responsibility; mismatched features or ``n_states``
+    raise ``ValueError``."""
+    df, _, _, _, out = _rolling_fits(features, jump_penalty, window, refit, n_states, None, n_init,
+                                     random_state, clip, feature_weights, calibration, fits)
+    return _pack_fits(df, out, n_states)
+
+
 def jump_states(features: Any, jump_penalty: float, window: int = 1260, refit: str | None = "ME",
                 n_states: int = 2, lookback: int | None = None, n_init: int = 10, random_state: int = 0,
-                clip: float | None = 3.0, feature_weights: Any = None, calibration: str = "rolling") -> pd.Series:
+                clip: float | None = 3.0, feature_weights: Any = None, calibration: str = "rolling",
+                fits: pd.DataFrame | None = None, since: Any = None) -> pd.Series:
     """Causal online states of a rolling jump model (one Series or a DataFrame of features for
     ONE series). At every refit date the scaler and centres are fitted on the ``window``
     observations before it; the state at *t* is the forward-DP argmin over the ``lookback``
@@ -368,15 +428,21 @@ def jump_states(features: Any, jump_penalty: float, window: int = 1260, refit: s
     ``feature_weights`` multiply the standardised, clipped features (the reference ``feat_weights``)
     inside every training and lookback window, so they scale the distances without touching the
     per-window scaler and without any full-sample statistic. ``calibration="expanding"`` fits each
-    refit on all observations before it (``window`` = minimum), see the module note.
+    refit on all observations before it (``window`` = minimum), see the module note. ``fits`` (from
+    :func:`jump_fits` on an earlier history, same arguments) resumes: stored refits are reused, new
+    ones fitted, and only the online inference runs over the whole history. ``since`` (a date)
+    restricts the online inference to observations at or after it — the state at *t* depends only
+    on the fit in force and the ``lookback`` observations ending at *t*, so the values returned are
+    identical to a full run; earlier observations are NaN.
     """
-    df, X, w, lookback, fits = _rolling_fits(features, jump_penalty, window, refit, n_states, lookback, n_init,
-                                             random_state, clip, feature_weights, calibration)
+    df, X, w, lookback, fl = _rolling_fits(features, jump_penalty, window, refit, n_states, lookback, n_init,
+                                           random_state, clip, feature_weights, calibration, fits)
     n = len(df)
     out = np.full(n, np.nan)
-    for j, (start, mu, sd, centers) in enumerate(fits):
-        stop = fits[j + 1][0] if j + 1 < len(fits) else n
-        for t in range(start, stop):
+    first_t = 0 if since is None else int(df.index.searchsorted(pd.Timestamp(since)))
+    for j, (start, mu, sd, centers) in enumerate(fl):
+        stop = fl[j + 1][0] if j + 1 < len(fl) else n
+        for t in range(max(start, first_t), stop):
             lo = max(0, t - lookback + 1)
             Z = _standardise(X[lo:t + 1], mu, sd, clip)
             out[t] = _online_last(_loss(Z if w is None else Z * w, centers), jump_penalty)
@@ -403,6 +469,15 @@ def _log_vol(r: pd.Series, method: str, lam: float, window: int, warmup: int, pp
         return np.log(vol.where(vol > 0))
 
 
+def _since_feature(feat_index: pd.Index, since: Any, lag: int) -> Any:
+    """``since`` refers to the indicator's dates (after ``lag``); the online inference must start
+    ``lag`` observations earlier on the feature index."""
+    if since is None:
+        return None
+    pos = int(feat_index.searchsorted(pd.Timestamp(since)))
+    return feat_index[max(pos - lag, 0)]
+
+
 def _default_benchmark(ppy: int) -> pd.Series:
     from paris import regimes
 
@@ -415,7 +490,7 @@ def risk_states(returns: Any, basis: str = "own", benchmark: Any = None, vol: st
                 window: int = 1260, refit: str | None = "ME", jump_penalty: float = RISK_PENALTY,
                 lookback: int | None = None, lag: int = 1, periods_per_year: int | None = None,
                 n_init: int = 10, random_state: int = 0, clip: float | None = 3.0,
-                calibration: str = "rolling") -> Any:
+                calibration: str = "rolling", fits: pd.DataFrame | None = None, since: Any = None) -> Any:
     """Risk-on (1) / risk-off (0) from a one-feature jump model on log volatility.
 
     ``basis="own"`` uses each series' own volatility; ``basis="benchmark"`` uses the benchmark's
@@ -436,9 +511,9 @@ def risk_states(returns: Any, basis: str = "own", benchmark: Any = None, vol: st
     p = prepare(returns, benchmark=benchmark if basis == "benchmark" else None, periods_per_year=periods_per_year)
 
     def states(r: pd.Series) -> pd.Series:
-        feat = _log_vol(r, vol, vol_lambda, vol_window, vol_warmup, p.ppy).dropna()
+        feat = _log_vol(r, vol, vol_lambda, vol_window, vol_warmup, p.ppy).dropna().rename("vol")
         s = jump_states(feat, jump_penalty, window, refit, 2, lookback, n_init, random_state, clip,
-                        calibration=calibration)
+                        calibration=calibration, fits=fits, since=_since_feature(feat.index, since, lag))
         on = (1.0 - s).reindex(r.index)  # state 0 = low volatility = risk-on
         return on.shift(lag) if lag else on
 
@@ -469,6 +544,37 @@ def trend_signal(returns: Any, signal: str = "slow", basis: str = "raw", rf: Any
     """The trailing-mean return series :func:`trend_states` classifies — the ``"slow"`` or
     ``"fast"`` signal of :func:`paris.momentum_signal` with the same basis and lookbacks."""
     return momentum_signal(returns, signal, basis, rf, benchmark, periods_per_year, slow, fast, compound)
+
+
+def risk_fits(returns: Any, vol: str = "ewma", vol_lambda: float = 0.94, vol_window: int = 63, vol_warmup: int = 60,
+              window: int = 1260, refit: str | None = "ME", jump_penalty: float = RISK_PENALTY,
+              periods_per_year: int | None = None, n_init: int = 10, random_state: int = 0, clip: float | None = 3.0,
+              calibration: str = "rolling", fits: pd.DataFrame | None = None) -> pd.DataFrame:
+    """:func:`jump_fits` of the risk model on ONE series (the stored form of its calibration); pass the
+    result as ``fits`` to :func:`risk_states` on a longer history with the same arguments."""
+    p = prepare(returns, periods_per_year=periods_per_year)
+    if p.multi:
+        raise ValueError("risk_fits takes one series")
+    feat = _log_vol(p.returns.iloc[:, 0], vol, vol_lambda, vol_window, vol_warmup, p.ppy).dropna().rename("vol")
+    return jump_fits(feat, jump_penalty, window, refit, 2, n_init, random_state, clip, None, calibration, fits)
+
+
+def trend_fits(returns: Any, basis: str = "raw", rf: Any = None, benchmark: Any = None, slow: int | None = None,
+               fast: int | None = None, compound: bool = False, features: tuple[str, ...] = ("slow", "fast"),
+               feature_weights: Any = None, window: int = 1260, refit: str | None = "ME",
+               jump_penalty: float = TREND_PENALTY, periods_per_year: int | None = None, n_init: int = 10,
+               random_state: int = 0, clip: float | None = 3.0, calibration: str = "rolling",
+               fits: pd.DataFrame | None = None) -> pd.DataFrame:
+    """:func:`jump_fits` of the trend model on ONE series; pass the result as ``fits`` to
+    :func:`trend_states` on a longer history with the same arguments."""
+    p, sig = _signal_frame(returns, basis, rf, benchmark, periods_per_year)
+    if p.multi:
+        raise ValueError("trend_fits takes one series")
+    k_slow, k_fast = _lookbacks(p.ppy, slow, fast)
+    trail = {"slow": _trailing(sig, k_slow, compound), "fast": _trailing(sig, k_fast, compound)}
+    c = sig.columns[0]
+    feat = pd.DataFrame({f: trail[f][c] for f in features}).dropna()
+    return jump_fits(feat, jump_penalty, window, refit, 2, n_init, random_state, clip, feature_weights, calibration, fits)
 
 
 def _centers_long(tables: dict[str, pd.DataFrame], multi: bool) -> pd.DataFrame:
@@ -530,7 +636,7 @@ def trend_states(returns: Any, basis: str = "raw", rf: Any = None, benchmark: An
                  window: int = 1260, refit: str | None = "ME", jump_penalty: float = TREND_PENALTY,
                  lookback: int | None = None, lag: int = 1, periods_per_year: int | None = None,
                  n_init: int = 10, random_state: int = 0, clip: float | None = 3.0,
-                 calibration: str = "rolling") -> Any:
+                 calibration: str = "rolling", fits: pd.DataFrame | None = None, since: Any = None) -> Any:
     """Trend-on (1) / trend-off (0) from a jump model on the momentum turning-point signals.
 
     ``features`` are the trailing-mean returns of :func:`paris.momentum_signal` — ``("slow",
@@ -558,7 +664,8 @@ def trend_states(returns: Any, basis: str = "raw", rf: Any = None, benchmark: An
 
     def states(c: str) -> pd.Series:
         feat = pd.DataFrame({f: trail[f][c] for f in features}).dropna()
-        s = jump_states(feat, jump_penalty, window, refit, 2, lookback, n_init, random_state, clip, w, calibration)
+        s = jump_states(feat, jump_penalty, window, refit, 2, lookback, n_init, random_state, clip, w, calibration, fits,
+                        _since_feature(feat.index, since, lag))
         on = s.reindex(sig.index)  # state 1 = high slow signal = trend-on
         return on.shift(lag) if lag else on
 
