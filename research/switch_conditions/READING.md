@@ -1,0 +1,9 @@
+# Reading (written after the run; rules frozen before it)
+
+**All three conditions RETIRE.**
+
+**Variance ratio VR(5,63) MA ≥ 1 is not a trend-friendliness gate for these funds; it is an off switch.** Own-fund and SPY versions leave the strategy in the market 5% and 2% of the time (2% to 10% even without the trend switch). At the daily horizon the 5-day variance ratio of an equity index sits below one almost always — short-horizon returns are mildly mean-reverting, a textbook result — so a threshold at the neutral value one is satisfied only in rare stretches. The screener uses this statistic as a *kill switch* for the mean-reversion book (halt when VR > 1), and that is the right reading: VR > 1 is the exception, not the regime. Sharpe is destroyed (−0.37 and −0.47 against the switch, 1 of 8 and 0 of 8), MaxDD "improves" only because the strategy holds cash, and the Martin gain for the SPY version (+0.03, 5 of 8) is the participation-floor artefact the process fix was written to catch. A tuned threshold below one would turn this into a fitted rule, which the pre-registration forbade.
+
+**VIX term structure (VIX3M − VIX ≥ 0) removes the wrong days.** It loses Martin in 8 of 8 funds (−0.23, CI [−0.35, −0.08]) and Sharpe in 8 of 8 (−0.12), flipping 8 times a year against the switch's 1.7. Its bear-fold drawdowns are marginally better (2020: −12.6% vs −17.2%), but it bleeds in every bull fold: brief backwardation episodes inside bull markets (2013–14, 2021, 2023–24, 2025) switch the position off and re-enter after the rebound. This is the same lesson the program's monthly VIX audit recorded — the VIX carries variance information, not direction — now confirmed at the daily switch level.
+
+**Disposition.** Neither condition joins the switch. The two external features held from the review are closed on this evidence; the trend switch remains trend λ5 rolling, unconditioned.

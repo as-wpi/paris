@@ -1,0 +1,11 @@
+{
+  "title": "State-dependent calibration memory: calm centre and scaler from the expanding history, crisis centre from the rolling 1,260 days",
+  "status": "FROZEN 2026-09-03 before any run; runs only because steps 1-3 left the switch unchanged",
+  "hypothesis": "The calibration test showed expanding memory cures anchoring of the calm/on centre but dilutes the crisis/off centre (later exits). Fitting the on centre and the feature scaler on all history while taking the off centre from the last five years should keep both properties.",
+  "construction": "at each monthly refit: fit the rolling model (last 1,260 obs) and the expanding model (all obs, min 1,260) with the library's own fitter; take the expanding scaler (mu, sd) and expanding on-centre; take the rolling off-centre in original units and re-express it in the expanding scaler's units; online inference (forward DP over the 1,260-obs lookback, standardised with the expanding scaler) with those two centres; lag 1. Off-centre = state 0 (low slow) for trend, state 1 (high vol) for risk.",
+  "arms": ["trend rolling 1260 (incumbent)", "trend expanding", "trend hybrid", "risk rolling 1260", "risk expanding", "risk hybrid (diagnostic under D1)", "Buy & hold"],
+  "universe_execution_folds": "identical to calibration_memory/preregistration.json",
+  "decision_rule": "identical to calibration_memory: PROMOTE if median ΔMartin vs rolling > 0 with CI excluding 0 OR wins >= 6/8, AND median ΔSharpe >= 0, AND bull-fold bleed not worse than rolling by > 0.10; else RETIRE. Named diagnostics: SPY risk time-in 2019-22; trend 2023-24 off-fraction; 2022 trend MaxDD.",
+  "implementation_note": "research arm using paris.jump private helpers (_rolling_fits, _standardise, _loss, _online_last); a PROMOTE would require a library feature before use",
+  "prior": "under 1 in 4"
+}
