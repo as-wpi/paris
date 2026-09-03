@@ -9,3 +9,5 @@ dist/
 NEXT_STEPS.local.md
 research/data_cache/
 research/frozen_rule_benchmark/*_exposures.csv
+research/calibration_memory/*_exposures.csv
+research/sizing_estimator/*_exposures.csv

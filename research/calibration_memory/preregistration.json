@@ -1,0 +1,25 @@
+{
+  "title": "Calibration memory of the PARIS jump models: rolling 1,260-day (incumbent) vs expanding window",
+  "status": "FROZEN 2026-09-03 before any run",
+  "design_decision_D1_recorded": "Approved 2026-09-03: the risk model is no longer used as an on/off gate; trend-on/off is the only switch and volatility enters through the sizing layer (vol-target). Evidence: risk gate 0/8 vs buy-and-hold on Sharpe in the walk-forward; gate/graded never beat trend alone on Sharpe; risk λ50 off 2018-Q4→2022 on SPY and 8/8 losses to B&H in the frozen-rule benchmark; vol-target sizing dominated the binary gate on the 3x vehicles; program boxed law 'never exit on volatility alone'. The risk model remains a diagnostic indicator; no library default changes.",
+  "hypothesis": "The fixed 5-year window mislabels normal-volatility years that follow an ultra-calm stretch (1998-99, 2010, 2019, 2021) and re-enters late after bears (2023). Centres fitted on all history seen so far (expanding, minimum 1,260) keep the calm-vs-crisis ordering stable and should reduce both errors.",
+  "arms": {
+    "primary_model": "trend λ=5 (own slow+fast): rolling 1260 (incumbent) vs expanding min 1260",
+    "diagnostic_model": "risk λ=50 (own log EWMA vol): rolling vs expanding — reported for the anchoring diagnosis, not a promotion candidate (D1)",
+    "not_run": "exponential forgetting (would anchor harder on the recent calm: ruled out as first challenger); ensemble of memories (fallback only if expanding fails on structurally shifted names, e.g. TLT after 2022)"
+  },
+  "universe": ["SPY", "QQQ", "XLK", "IWM", "EFA", "EEM", "TLT", "GLD"],
+  "execution": "as frozen_rule_benchmark: exposure for T from close T-1, 10 bp one-way, T-bill cash; online lookback unchanged (1,260); monthly refit",
+  "folds": "identical to frozen_rule_benchmark/preregistration.json",
+  "metrics_primary": ["Martin (paired, 1,000-draw ticker bootstrap CI)", "Sharpe"],
+  "metrics_reported": ["MaxDD", "CAGR", "time in", "flips/yr", "off-fraction"],
+  "process_fixes_applied": {
+    "no_maxdd_gate": "MaxDD is reported, never gated; a participation floor applies: fold-level comparisons are made only where both arms have time-in >= 50% in the fold, otherwise the fold is reported as 'both mostly flat'",
+    "bleed_relative_to_bh": "bull-fold bleed = B&H Sharpe - arm Sharpe; the challenger must not bleed more than the incumbent by > 0.10 (cross-ticker median) in any bull fold"
+  },
+  "decision_rule": {
+    "PROMOTE_to_default_candidate": "median full-OOS ΔMartin > 0 with 95% CI excluding 0 OR wins >= 6/8; AND median ΔSharpe >= 0; AND bleed condition holds in every bull fold",
+    "RETIRE": "otherwise",
+    "named_diagnostics": ["SPY risk-model time-in 2019-2022 (incumbent ~0)", "trend off-fraction in C_mixed_2023_24 (incumbent 0.39)", "TLT post-2022 labels (structural vol shift)"]
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "title": "B1 as a sizing-estimator test: volatility estimators inside the vol-target loop (not as regime features)",
+  "status": "FROZEN 2026-09-03 before any run; gate calibration = winner of calibration_memory (rolling if RETIRE)",
+  "rationale": "Decision D1 moved volatility to the sizing layer, so the natural test of range-based volatility is head-to-head against the incumbent EWMA inside the vol-target — the format that chose EWMA over EGARCH (volatility-estimator policy, 2026-08-31).",
+  "estimators": {
+    "E0": "EWMA λ=0.94 of squared daily log close-to-close returns, 60-day warm-up (incumbent)",
+    "E1": "Yang-Zhang (2000) over a rolling 21-day window: overnight variance + k·open-to-close variance + (1-k)·Rogers-Satchell, k = 0.34/(1.34 + (n+1)/(n-1))",
+    "E2": "Parkinson (1980) EWMA λ=0.94 of (ln H/L)^2 / (4 ln 2) — isolates the range information from the window choice",
+    "E3": "K-ATR fast parity arm: the screener's 2-state LLT Kalman (q_level 1e-4, q_slope 1e-6, R 1e-3) on log true-range-% (perf_metrics.py), exp back, converted to annualised vol with E[H-L] = 2·sqrt(2/pi)·sigma ≈ 1.596·sigma (driftless Brownian motion; TR >= H-L so this arm is biased upward, i.e. sizes smaller — reported, not corrected)"
+  },
+  "panels": {
+    "P1_1x": {"universe": ["SPY", "QQQ", "XLK", "IWM", "EFA", "EEM", "TLT", "GLD"], "sigma_target": 0.10, "band": [0.085, 0.115], "cap": 1.0, "gate": ["none", "trend λ5 on own returns"]},
+    "P2_3x": {"pairs": {"SPY": "UPRO", "QQQ": "TQQQ", "XLK": "TECL", "IWM": "TNA", "EEM": "EDC", "TLT": "TMF", "GLD": "UGL"}, "sigma_target": 0.30, "band": [0.25, 0.35], "cap": 1.0, "gate": ["none", "trend λ5 on the 1x"], "construction": "letf_voltarget_trend.py §14.1: estimator on the leveraged fund's own OHLC; rebalance on gate flip or band exit"}
+  },
+  "execution": "sigma and gate known at close T-1; t+0; 5+3 bp one-way on units traded; cash = T-bill",
+  "metrics_primary": {
+    "tracking": "RMSE of rolling-63-day realised vol of the ungated sized strategy around sigma_target, and |full-sample realised vol - target| (measurement quality: lower is better)",
+    "outcome": "Sharpe and Martin of the gated strategy (paired vs E0, bootstrap CI)"
+  },
+  "metrics_reported": ["MaxDD", "CAGR", "turnover/yr", "mean weight"],
+  "decision_rule": {
+    "ADOPT_estimator": "beats E0 on tracking RMSE in >= 6/8 (P1) and >= 5/7 (P2) names AND does not lose Sharpe (median ΔSharpe >= -0.02) AND turnover not more than 1.25x E0",
+    "RETIRE": "otherwise; a tracking win with a Sharpe loss is reported as 'measurement better, sizing worse' and not adopted"
+  }
+}
