@@ -1,0 +1,10 @@
+{
+  "H_parity": {
+    "crash_speed": "PASS",
+    "governor": "PASS"
+  },
+  "H_full": {
+    "crash_speed": "RETIRE",
+    "governor": "RETIRE"
+  }
+}
