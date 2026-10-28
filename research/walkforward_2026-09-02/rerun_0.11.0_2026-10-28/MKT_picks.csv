@@ -1,0 +1,33 @@
+year,selected,selection Sharpe
+1995,cells r20/t10,0.536
+1996,joint3f K=4 λ=5,1.304
+1997,cells r100/t10,1.693
+1998,cells r50/t20,1.662
+1999,joint3f K=4 λ=5,1.442
+2000,joint2f K=4 λ=5,1.319
+2001,joint2f K=4 λ=5,1.021
+2002,graded r50/t20,0.872
+2003,graded r50/t20,0.827
+2004,cells r50/t20,0.919
+2005,cells r50/t20,0.905
+2006,cells r50/t20,0.84
+2007,cells r50/t20,0.847
+2008,cells r50/t20,0.786
+2009,cells r50/t5,0.735
+2010,cells r50/t5,0.74
+2011,cells r50/t5,0.748
+2012,joint3f K=4 λ=5,0.654
+2013,cells r50/t5,0.671
+2014,joint3f K=4 λ=5,0.772
+2015,cells r50/t5,0.78
+2016,or r50/t5,0.722
+2017,or r50/t5,0.734
+2018,graded r50/t5,0.786
+2019,cells r50/t5,0.769
+2020,cells r50/t5,0.749
+2021,cells r50/t5,0.77
+2022,cells r50/t5,0.8
+2023,or r100/t5,0.759
+2024,or r100/t5,0.757
+2025,or r100/t5,0.778
+2026,cells r100/t5,0.773

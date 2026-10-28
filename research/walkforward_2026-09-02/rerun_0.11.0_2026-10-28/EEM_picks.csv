@@ -1,0 +1,16 @@
+year,selected,selection Sharpe
+2012,joint2f K=4 λ=20,1.081
+2013,joint2f K=4 λ=20,1.051
+2014,cells r10/t2,0.992
+2015,joint2f K=4 λ=20,0.845
+2016,joint2f K=4 λ=20,0.759
+2017,joint2f K=4 λ=20,0.778
+2018,cells r10/t20,0.76
+2019,cells r10/t20,0.56
+2020,cells r10/t20,0.704
+2021,cells r100/t2,0.755
+2022,cells r100/t2,0.728
+2023,cells r100/t2,0.7
+2024,cells r100/t2,0.676
+2025,cells r100/t2,0.654
+2026,cells r100/t2,0.636

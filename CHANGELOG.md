@@ -5,6 +5,17 @@ All notable changes to PARIS are recorded here, one section per release. Version
 are never changed silently: a change to a default convention is a breaking change and is listed
 under **Changed**.
 
+## Unreleased
+
+### Research (no library change)
+- `research/walkforward_2026-09-02/`: the run's input was never recorded; `build_input.py` rebuilds
+  it from the data cache cut at 2026-09-02 and checks its SHA-256, and `REPRODUCE.md` records the
+  command, the proof (the 0.10.0 source reproduces 17 of the 18 recorded CSVs byte for byte, TLT
+  within 1.1e-5) and the numbers under 0.11.0 beside the recorded ones (`rerun_0.11.0_2026-10-28/`,
+  `summarize.py`). The walk-forward record is re-run under the new seeding after all, as the 0.11.0
+  entry below did not; its conclusions hold, its counts and means move (trend λ5 Sharpe wins 5 → 4
+  of 8, mean 0.508 → 0.504).
+
 ## 0.11.0 — 2026-09-03 — Stored fits and resumable inference for the jump models (fork: as-wpi/paris)
 
 ### Added
