@@ -25,7 +25,7 @@ def fetch(symbol: str, start: str = "1990-01-01") -> pd.DataFrame:
     for i, y in enumerate(years):
         frm = f"{y}-01-01"
         to = f"{years[i + 1] - 1}-12-31" if i + 1 < len(years) else pd.Timestamp.today().strftime("%Y-%m-%d")
-        r = requests.get(BASE, params={"symbol": symbol, "from": frm, "to": to, "apikey": KEY}, timeout=60)
+        r = requests.get(BASE, params={"symbol": symbol, "from": frm, "to": to}, headers={"apikey": KEY}, timeout=60)
         r.raise_for_status()
         js = r.json()
         if js:
@@ -44,7 +44,7 @@ def fetch_treasury(start: str = "1990-01-01") -> pd.DataFrame:
     years = list(range(int(start[:4]), pd.Timestamp.today().year + 1, 4))
     for i, y in enumerate(years):
         to = f"{years[i + 1] - 1}-12-31" if i + 1 < len(years) else pd.Timestamp.today().strftime("%Y-%m-%d")
-        r = requests.get(TSY, params={"from": f"{y}-01-01", "to": to, "apikey": KEY}, timeout=60)
+        r = requests.get(TSY, params={"from": f"{y}-01-01", "to": to}, headers={"apikey": KEY}, timeout=60)
         r.raise_for_status()
         if r.json():
             frames.append(pd.DataFrame(r.json()))
